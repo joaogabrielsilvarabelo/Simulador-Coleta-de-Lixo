@@ -1,4 +1,4 @@
-package tads.Listas;
+package tads;
 
 
 public class ListaEncadeada {

@@ -1,10 +1,15 @@
 package caminhoes;
 
+import java.util.Random;
+
 public class CaminhaoPequenoPadrao extends CaminhaoPequeno {
 
     public CaminhaoPequenoPadrao() {
-        this.capacidade = 2000;
         this.cargaAtual = 0;
+        int[] opcoes = {2000, 4000, 8000, 10000};
+        Random random = new Random();
+        int indice = random.nextInt(opcoes.length);
+        this.capacidade = opcoes[indice];
     }
 
     @Override
@@ -14,5 +19,9 @@ public class CaminhaoPequenoPadrao extends CaminhaoPequeno {
             return true;
         }
         return false;
+    }
+
+    public int getCapacidade() {
+        return capacidade;
     }
 }

@@ -1,4 +1,4 @@
-package tads.Listas;
+package tads;
 
 public class ListaDuplamenteEncadeadaCircular {
      No head;
@@ -12,8 +12,8 @@ public class ListaDuplamenteEncadeadaCircular {
     }
 
 
-    public void inserirNoInicio(int valor) {
-        No current = new No(valor);
+    public void inserirNoInicio(String nome) {
+        No current = new No(nome);
         if (head == null) { //Ja que isso é na condição que nao tem elemento então tudo aponta para o mesmo lugar
             head = current;
             tail = current;
@@ -32,8 +32,8 @@ public class ListaDuplamenteEncadeadaCircular {
         }
     }
 
-    public void inserirNoFinal(int valor) { //Não acredito que era só pegar o inserirNoInicio e trocar o head final pelo tail aaaaaaa
-        No current = new No(valor); //Como falei antes, esse negócio é só o inserirNoInicio, com o final inserindo o elemento no tail (final)
+    public void inserirNoFinal(String nome) { //Não acredito que era só pegar o inserirNoInicio e trocar o head final pelo tail aaaaaaa
+        No current = new No(nome); //Como falei antes, esse negócio é só o inserirNoInicio, com o final inserindo o elemento no tail (final)
         //Ao invés de head (inicio)
         if (head == null) {
             head = current;

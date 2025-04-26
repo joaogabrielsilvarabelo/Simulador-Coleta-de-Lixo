@@ -1,4 +1,4 @@
-package tads.Listas;
+package tads;
 
 public class No {
     int valor;
@@ -6,14 +6,14 @@ public class No {
     No ant;
     String nome;
 
-    public No(int valor){
-        this.valor = valor;
+    public No(String nome){
+        this.nome = nome;
         this.prox = null;
         this.ant = null;
     }
 
-    public No(String nome){
-        this.nome = nome;
+    public No(int valor){
+        this.valor = valor;
         this.prox = null;
         this.ant = null;
     }

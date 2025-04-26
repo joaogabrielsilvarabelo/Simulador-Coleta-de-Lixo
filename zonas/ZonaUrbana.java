@@ -5,15 +5,19 @@ import java.util.Random;
 public class ZonaUrbana {
     private String nome;
     private int lixoAcumulado;
+    private int lixoMin;
+    private int lixoMax;
+
 
     public ZonaUrbana(String nome) {
         this.nome = nome;
         this.lixoAcumulado = 0;
+        this.lixoMin = 20;
+        this.lixoMax = 100;
     }
 
     public void gerarLixo() {
-        int quantidade = new Random().nextInt(500) + 100;
-        lixoAcumulado += quantidade;
+        int quantidade = new Random().nextInt(lixoMin, lixoMax);
         System.out.println(nome + ": Gerou " + quantidade + "kg de lixo. Total: " + lixoAcumulado + "kg.");
     }
 

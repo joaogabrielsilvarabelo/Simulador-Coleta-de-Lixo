@@ -1,7 +1,7 @@
 package estacoes;
 
-import caminhoes.CaminhaoPequeno;
 import caminhoes.CaminhaoGrande;
+import caminhoes.CaminhaoPequeno;
 
 public abstract class EstacaoTransferencia {
     protected String nome;

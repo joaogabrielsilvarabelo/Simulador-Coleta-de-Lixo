@@ -1,13 +1,15 @@
-import caminhoes.CaminhaoPequenoPadrao;
-import zonas.ZonaUrbana;
+import caminhoes.CaminhaoPequeno;
 
 public class Main {
     public static void main(String[] args) {
         //Simulador simulador = new Simulador();
         //simulador.iniciar();
-        ZonaUrbana norte = new ZonaUrbana("Norte");
-        norte.gerarLixo();
-        norte.getLixoAcumulado();
+        //ZonaUrbana norte = new ZonaUrbana("Norte");
+        //norte.gerarLixo();
+        //norte.getLixoAcumulado();
+
+        CaminhaoPequeno Primeiro = new CaminhaoPequeno(4);
+        System.out.println("A capacidade é:" + Primeiro.getCapacidade());
 
 
         //Teste rapidao

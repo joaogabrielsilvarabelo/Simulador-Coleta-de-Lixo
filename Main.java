@@ -10,6 +10,8 @@ public class Main {
         norte.getLixoAcumulado();
 
 
+        //Teste rapidao
+
 
 
         // Este exemplo simples apenas inicia a simulação.

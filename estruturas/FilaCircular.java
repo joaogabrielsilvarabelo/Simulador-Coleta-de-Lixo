@@ -1,4 +1,4 @@
-package tads;
+package estruturas;
 
 public class FilaCircular {
     No head;

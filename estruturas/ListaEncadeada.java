@@ -3,19 +3,20 @@ package estruturas;
 
 public class ListaEncadeada {
     private No head;
+    int tamanho;
 
     public ListaEncadeada(){
         this.head = null;
     }
 
-    public void inserirNoInicio(int valor) {
-        No novoNo = new No(valor);
+    public void inserirNoInicio(int dado) {
+        No novoNo = new No(dado);
         novoNo.prox = head;
         head = novoNo;
     }
 
-    public void inserirNoFinal(int valor){
-        No novoNo = new No(valor);
+    public void inserirNoFinal(int dado){
+        No novoNo = new No(dado);
         if (head == null){
             head = novoNo;
         }
@@ -48,7 +49,7 @@ public class ListaEncadeada {
     public void imprimirLista(){
         No current = head;
         while (current != null){
-            System.out.print(current.valor + "");
+            System.out.print(current.dado + "");
             current = current.prox;
         }
         System.out.println(" Lista impressa");

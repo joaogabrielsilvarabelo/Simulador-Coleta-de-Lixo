@@ -8,17 +8,27 @@ public class CaminhaoPequeno {
 
     public CaminhaoPequeno(int escolha, String placaOpcional) {
         this.cargaAtual = 0;
-        if (escolha >= 1 && escolha <= 4) {
-            this.capacidade = OPCOES[escolha - 1];
-        } else {
+        this.capacidade = determinarCapacidade(escolha);
+        CaminhaoPequeno.id = processarPlaca(placaOpcional);
+    }
+
+    private int determinarCapacidade(int escolha) {
+        if (escolha < 1 || escolha > 4) {
             throw new IllegalArgumentException("Escolha deve ser de 1 a 4.");
         }
-        if (placaOpcional != null && !placaOpcional.isBlank() && Placa.validarPlaca(placaOpcional)) {
-            CaminhaoPequeno.id = placaOpcional.toUpperCase();
-            //O código trata placas inválidas do mesmo jeito que nulas, ou seja, só gera uma placa aleatória no lugar
-        } else {
-            CaminhaoPequeno.id = Placa.gerarPlaca();
+        return OPCOES[escolha - 1];
+    }
+
+    private static String processarPlaca(String placaOpcional) {
+        if (placaOpcional != null) {
+            if (!Placa.validarPlaca(placaOpcional)) {
+                throw new IllegalArgumentException("Placa não segue normas do Mercosul");
+            }
+            if (!placaOpcional.isBlank()) {
+                return placaOpcional.toUpperCase();
+            }
         }
+        return Placa.gerarPlaca();
     }
 
     public CaminhaoPequeno(int escolha) {

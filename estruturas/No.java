@@ -1,19 +1,13 @@
 package estruturas;
 
-public class No {
-    int valor;
+@SuppressWarnings("rawtypes")
+class No<T> {
     No prox;
     No ant;
-    String nome;
+    T dado;
 
-    public No(String nome){
-        this.nome = nome;
-        this.prox = null;
-        this.ant = null;
-    }
-
-    public No(int valor){
-        this.valor = valor;
+    public No(T dado){
+        this.dado = dado;
         this.prox = null;
         this.ant = null;
     }

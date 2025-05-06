@@ -7,15 +7,23 @@ public class CaminhaoGrande {
 
     public CaminhaoGrande(String placaOpcional) {
         this.cargaAtual = 0;
-        if (placaOpcional != null && !placaOpcional.isBlank() && Placa.validarPlaca(placaOpcional)) {
-            CaminhaoGrande.id = placaOpcional.toUpperCase();
-        } else {
-            CaminhaoGrande.id = Placa.gerarPlaca();
-        }
+        CaminhaoGrande.id = processarPlaca(placaOpcional);
     }
 
     public CaminhaoGrande() {
         this(null);
+    }
+
+    private static String processarPlaca(String placaOpcional) {
+        if (placaOpcional != null) {
+            if (!Placa.validarPlaca(placaOpcional)) {
+                throw new IllegalArgumentException("Placa não segue normas do Mercosul");
+            }
+            if (!placaOpcional.isBlank()) {
+                return placaOpcional.toUpperCase();
+            }
+        }
+        return Placa.gerarPlaca();
     }
 
     public void carregar(int quantidade) {

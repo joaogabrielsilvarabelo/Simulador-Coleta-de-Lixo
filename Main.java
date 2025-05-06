@@ -1,25 +1,43 @@
+import caminhoes.CaminhaoPequeno;
+import estruturas.FilaCircular;
 
-
+import java.io.IOException;
 
 public class Main {
-    public static void main(String[] args) {
-       Simulador simulador = new Simulador();
-       simulador.iniciar();
-        try {
-            Thread.sleep(3000); // espera 3000 milissegundos (3 segundos)
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        simulador.gravar("teste.json");
-        try {
-            Thread.sleep(1000); // espera 3000 milissegundos (3 segundos)
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        simulador.encerrar();
+    public static void main(String[] args) throws IOException {
+       //Simulador simulador = new Simulador();
+        //       simulador.iniciar();
+        //        try {
+        //            Thread.sleep(3000); // espera 3000 milissegundos (3 segundos)
+        //        } catch (InterruptedException e) {
+        //            e.printStackTrace();
+        //        }
+        //        simulador.gravar("teste.json");
+        //        try {
+        //            Thread.sleep(1000); // espera 3000 milissegundos (3 segundos)
+        //        } catch (InterruptedException e) {
+        //            e.printStackTrace();
+        //        }
+        //        simulador.encerrar();
+        FilaCircular filaCircular =  new FilaCircular<>();
+        filaCircular.enfileirar("JON4S23");
+        filaCircular.enfileirar("LOL5Z17");
+        filaCircular.enfileirar("XYZ8J78");
+        System.out.println("O tamanho da fila é:" + filaCircular.getTamanho());
+        System.out.println("A fila é:");
+        filaCircular.imprimirFila();
+        filaCircular.remover();
+        System.out.println("O tamanho da fila após a remoção é:" + filaCircular.getTamanho());
+        System.out.println("A fila após a remoção é");
+        filaCircular.imprimirFila();
+
+
+
+
         //ZonaUrbana norte = new ZonaUrbana("Norte");
         //norte.gerarLixo();
         //norte.getLixoAcumulado();
+
 
         //Teste placas e capacidade
         //CaminhaoPequeno Primeiro = new CaminhaoPequeno(4);

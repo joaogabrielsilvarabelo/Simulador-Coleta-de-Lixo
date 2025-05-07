@@ -3,9 +3,11 @@ package caminhoes;
 public class CaminhaoPequeno {
     protected int capacidade;
     protected int cargaAtual;
-    private static final int[] OPCOES = {2000, 4000, 8000, 10000};
+    protected static final int[] OPCOES = {2000, 4000, 8000, 10000};
     private static String id;
-    public int maxViagens;
+    protected int limiteViagens;
+    protected int viagensFeitas;
+    private static final String[] ESTADO_CAMINHAO_PEQUENO = {"DISPONÍVEL", "COLETANDO", "INDO_À_ESTAÇÃO", "FILA_ESTAÇÃO", "DESCARREGANDO", "ENCERRADO"};
 
     public CaminhaoPequeno(int escolha, int maxViagens, String placaOpcional) {
         this.cargaAtual = 0;
@@ -38,6 +40,10 @@ public class CaminhaoPequeno {
 
     public String getPlaca() {
         return id;
+    }
+
+    public boolean limiteAtingido(int viagensFeitas){
+        return viagensFeitas < limiteViagens;
     }
 
     public boolean coletar(int quantidade) {

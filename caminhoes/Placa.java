@@ -18,7 +18,6 @@ public class Placa {
         //NN
         placa.append(random.nextInt(10));
         placa.append(random.nextInt(10));
-
         return placa.toString();
     }
 

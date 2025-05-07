@@ -3,21 +3,23 @@ package estacoes;
 import caminhoes.CaminhaoGrande;
 import caminhoes.CaminhaoPequeno;
 import estruturas.Fila;
+import estruturas.Lista;
 
 public class EstacaoTransferencia {
 
     private String nome;
     private int lixoArmazenado;
-    private Fila filaCaminhoes;
+    private Fila filaPequenos;
+    private Lista listaGrandes;
 
     public EstacaoTransferencia(String nome) {
         this.nome = nome;
         this.lixoArmazenado = 0;
-        this.filaCaminhoes = new Fila();
+        this.filaPequenos = new Fila();
     }
 
     public void receberCaminhaoPequeno(CaminhaoPequeno caminhao) {
-        filaCaminhoes.enfileirar(caminhao.getPlaca());
+        filaPequenos.enfileirar(caminhao.getPlaca());
         int descarregado = caminhao.descarregar();
         lixoArmazenado += descarregado;
         System.out.println("Estação " + nome + " recebeu " + descarregado +
@@ -29,4 +31,10 @@ public class EstacaoTransferencia {
         System.out.println("Estação " + nome + " carregou caminhão grande com " + lixoArmazenado + "kg.");
         lixoArmazenado = 0;
     }
+
+
+    public void adicionarCaminhaoGrande(CaminhaoGrande grande) {
+        listaGrandes.adicionar(grande);
+    }
+
 }

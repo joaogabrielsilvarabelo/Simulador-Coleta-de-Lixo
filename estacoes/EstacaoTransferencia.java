@@ -2,18 +2,18 @@ package estacoes;
 
 import caminhoes.CaminhaoGrande;
 import caminhoes.CaminhaoPequeno;
-import estruturas.FilaCircular;
+import estruturas.Fila;
 
 public class EstacaoTransferencia {
 
     private String nome;
     private int lixoArmazenado;
-    private FilaCircular filaCaminhoes;
+    private Fila filaCaminhoes;
 
     public EstacaoTransferencia(String nome) {
         this.nome = nome;
         this.lixoArmazenado = 0;
-        this.filaCaminhoes = new FilaCircular();
+        this.filaCaminhoes = new Fila();
     }
 
     public void receberCaminhaoPequeno(CaminhaoPequeno caminhao) {

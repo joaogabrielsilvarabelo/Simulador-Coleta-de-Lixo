@@ -1,5 +1,4 @@
-import caminhoes.CaminhaoPequeno;
-import estruturas.FilaCircular;
+import zonas.ZonaUrbana;
 
 import java.io.IOException;
 
@@ -19,18 +18,26 @@ public class Main {
         //            e.printStackTrace();
         //        }
         //        simulador.encerrar();
-        FilaCircular filaCircular =  new FilaCircular<>();
-        filaCircular.enfileirar("JON4S23");
-        filaCircular.enfileirar("LOL5Z17");
-        filaCircular.enfileirar("XYZ8J78");
-        System.out.println("O tamanho da fila é:" + filaCircular.getTamanho());
-        System.out.println("A fila é:");
-        filaCircular.imprimirFila();
-        filaCircular.remover();
-        System.out.println("O tamanho da fila após a remoção é:" + filaCircular.getTamanho());
-        System.out.println("A fila após a remoção é");
-        filaCircular.imprimirFila();
 
+
+
+        //        FilaCircular filaCircular =  new FilaCircular<>();
+        //        filaCircular.enfileirar("JON4S23");
+        //        filaCircular.enfileirar("LOL5Z17");
+        //        filaCircular.enfileirar("XYZ8J78");
+        //        System.out.println("O tamanho da fila é:" + filaCircular.getTamanho());
+        //        System.out.println("A fila é:");
+        //        filaCircular.imprimirFila();
+        //        filaCircular.remover();
+        //        System.out.println("O tamanho da fila após a remoção é:" + filaCircular.getTamanho());
+        //        System.out.println("A fila após a remoção é");
+        //        filaCircular.imprimirFila();
+
+          ZonaUrbana norte = new ZonaUrbana(1, 4, 10);
+            System.out.println("A zona é:" + norte.getNome());
+            norte.gerarLixo();
+            System.out.println("A variação de pico é:" + norte.getVariacaoPico());
+            System.out.println("A variação normal é:" + norte.getVariacaoNormal());
 
 
 

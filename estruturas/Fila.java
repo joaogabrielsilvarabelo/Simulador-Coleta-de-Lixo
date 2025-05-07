@@ -2,13 +2,12 @@ package estruturas;
 
 import java.util.NoSuchElementException;
 
-@SuppressWarnings({"unchecked", "rawtypes"})
-public class FilaCircular<T> {
+public class Fila<T> {
     No head;
     No tail;
     int tamanho;
 
-    public FilaCircular() {
+    public Fila() {
         this.head = null;
         this.tail = null;
         this.tamanho = 0;

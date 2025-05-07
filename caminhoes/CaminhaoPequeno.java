@@ -5,11 +5,16 @@ public class CaminhaoPequeno {
     protected int cargaAtual;
     private static final int[] OPCOES = {2000, 4000, 8000, 10000};
     private static String id;
+    public int maxViagens;
 
-    public CaminhaoPequeno(int escolha, String placaOpcional) {
+    public CaminhaoPequeno(int escolha, int maxViagens, String placaOpcional) {
         this.cargaAtual = 0;
         this.capacidade = determinarCapacidade(escolha);
         CaminhaoPequeno.id = processarPlaca(placaOpcional);
+    }
+
+    public CaminhaoPequeno(int escolha, int maxViagens) {
+        this(escolha, maxViagens, null);
     }
 
     private int determinarCapacidade(int escolha) {
@@ -29,10 +34,6 @@ public class CaminhaoPequeno {
             }
         }
         return Placa.gerarPlaca();
-    }
-
-    public CaminhaoPequeno(int escolha) {
-        this(escolha, null);
     }
 
     public String getPlaca() {

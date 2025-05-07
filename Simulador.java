@@ -3,6 +3,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class Simulador implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private transient Timer timer;

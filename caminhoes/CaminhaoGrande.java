@@ -1,9 +1,10 @@
 package caminhoes;
 
 public class CaminhaoGrande {
-    protected int capacidadeMaxima = 20000;
+    protected int capacidade = 20000;
     protected int cargaAtual;
     private static String id;
+    private int tempoTolerancia = 200;
 
     public CaminhaoGrande(String placaOpcional) {
         this.cargaAtual = 0;
@@ -28,13 +29,13 @@ public class CaminhaoGrande {
 
     public void carregar(int quantidade) {
         cargaAtual += quantidade;
-        if (cargaAtual > capacidadeMaxima) {
-            cargaAtual = capacidadeMaxima;
+        if (cargaAtual > capacidade) {
+            cargaAtual = capacidade;
         }
     }
 
     public boolean prontoParaPartir() {
-        return cargaAtual >= capacidadeMaxima;
+        return cargaAtual >= capacidade;
     }
 
     public void descarregar() {
@@ -46,5 +47,11 @@ public class CaminhaoGrande {
         return id;
     }
 
+    public int getCargaAtual() {
+        return cargaAtual;
+    }
 
+    public int getCapacidade() {
+        return capacidade;
+    }
 }

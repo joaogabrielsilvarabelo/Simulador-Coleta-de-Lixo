@@ -3,9 +3,9 @@ package estruturas;
 import java.util.NoSuchElementException;
 
 public class Fila<T> {
-    No head;
-    No tail;
-    int tamanho;
+    private No<T> head;
+    private No<T> tail;
+    private int tamanho;
 
     public Fila() {
         this.head = null;
@@ -14,61 +14,64 @@ public class Fila<T> {
     }
 
     public void enfileirar(T dado) {
-        No current = new No(dado);
+        No<T> novoNo = new No<>(dado);
         if (estaVazia()) {
-            head = current;
-            tail = current;
+            head = novoNo;
+            tail = novoNo;
             tail.prox = head;
         } else {
-            tail.prox = current;
-            tail = current;
+            tail.prox = novoNo;
+            tail = novoNo;
             tail.prox = head;
         }
         tamanho++;
     }
 
-    public void remover() {
+    public T remover() {
         if (estaVazia()) {
-            throw new NoSuchElementException("A fila está vazia");
+            throw new RuntimeException("Fila vazia!");
         }
-        if (head == tail) {
-            head = null;
+
+        T dadoRemovido = head.dado;
+        head = head.prox;
+
+        if (head == null) {
             tail = null;
         } else {
-            head = head.prox;
             tail.prox = head;
         }
+
         tamanho--;
+        return dadoRemovido;
     }
 
     public T primeiroDaFila() {
         if (estaVazia()) {
             throw new NoSuchElementException("A fila está vazia!");
         }
-        return (T) head.dado;
+        return head.dado;
     }
 
     public boolean estaVazia() {
         return tamanho == 0;
     }
 
-    public int getTamanho(){
+    public int getTamanho() {
         return tamanho;
     }
 
     public void imprimirFila() {
-        if (head == null) {
+        if (estaVazia()) {
             throw new NoSuchElementException("A fila está vazia!");
-        } else {
-            No current = head; //Começa normal que nem o outro
-            do {
-                System.out.println(current.dado + " ");
-                current = current.prox;
-            }
-            while (current != head);
-
-            System.out.println(" ");
         }
+
+        No<T> atual = head;
+        do {
+            System.out.println(atual.dado + " ");
+            atual = atual.prox;
+        } while (atual != head);
+
         System.out.println(" Fila impressa");
     }
 }
+

@@ -7,12 +7,14 @@ public class CaminhaoPequeno {
     private static String id;
     protected int limiteViagens;
     protected int viagensFeitas;
-    private static final String[] ESTADO_CAMINHAO_PEQUENO = {"DISPONÍVEL", "COLETANDO", "INDO_À_ESTAÇÃO", "FILA_ESTAÇÃO", "DESCARREGANDO", "ENCERRADO"};
+    private static final String[] ESTADO_CAMINHAO_PEQUENO = {"DISPONÍVEL", "COLETANDO", "INDO__ESTAÇÃO", "FILA_ESTAÇÃO", "DESCARREGANDO", "ENCERRADO"};
+    protected int status;
 
     public CaminhaoPequeno(int escolha, int maxViagens, String placaOpcional) {
         this.cargaAtual = 0;
         this.capacidade = determinarCapacidade(escolha);
         CaminhaoPequeno.id = processarPlaca(placaOpcional);
+        this.status = 0;
     }
 
     public CaminhaoPequeno(int escolha, int maxViagens) {
@@ -24,6 +26,13 @@ public class CaminhaoPequeno {
             throw new IllegalArgumentException("Escolha deve ser de 1 a 4.");
         }
         return OPCOES[escolha - 1];
+    }
+
+    private String determinarEstado(int status) {
+        if (status < 1 || status > 6) {
+            throw new IllegalArgumentException("Escolha deve ser de 1 a 6.");
+        }
+        return ESTADO_CAMINHAO_PEQUENO[status - 1];
     }
 
     private static String processarPlaca(String placaOpcional) {

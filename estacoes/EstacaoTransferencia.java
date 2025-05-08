@@ -66,15 +66,12 @@ public class EstacaoTransferencia {
         System.out.println("Estação " + nome + " carregou caminhão grande com " + lixoArmazenado + "kg.");
         lixoArmazenado = 0;
     }
-
 //        filaPequenos.enfileirar(caminhao.getPlaca());
 //        int descarregado = caminhao.descarregar();
 //        lixoArmazenado += descarregado;
 //        System.out.println("Estação " + nome + " recebeu " + descarregado +
 //                "kg de lixo do caminhão " + caminhao.getPlaca());
-
     public void adicionarCaminhaoGrande(CaminhaoGrande grande) {
         listaGrandes.adicionar(grande);
     }
-
 }

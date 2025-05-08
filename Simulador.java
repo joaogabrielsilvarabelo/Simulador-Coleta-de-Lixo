@@ -1,3 +1,7 @@
+import caminhoes.CaminhaoPequeno;
+import estruturas.Lista;
+import zonas.ZonaUrbana;
+
 import java.io.*;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -55,5 +59,39 @@ public class Simulador implements Serializable {
 
     private void atualizarSimulacao() {
         System.out.println("Tempo simulado: " + tempoSimulado + " minutos");
+    }
+
+    public void distribuirCaminhoesGeograficamente(Lista<CaminhaoPequeno> disponiveis, Lista<ZonaUrbana> zonas) {
+        for (int i = 0; i < disponiveis.getTamanho(); i++) {
+            CaminhaoPequeno pequeno = disponiveis.obter(i);
+            ZonaUrbana melhor = null;
+            int menorDistancia = Integer.MAX_VALUE;
+            for (int j = 0; j < zonas.getTamanho(); j++) {
+                ZonaUrbana z = zonas.obter(j);
+                if (z.getLixoAcumulado() > 3000) {
+                    int dist = ZonaUrbana.getDistancia(pequeno.getZonaBase().getNome(), z.getNome());
+                    if (dist < menorDistancia) {
+                        menorDistancia = dist;
+                        melhor = z;
+                    }
+                }
+            }
+            if (melhor != null) {
+                pequeno.determinarEstado(2); // COLETANDO
+                disponiveis.remover(pequeno);
+                pequeno.setZonaAtual(melhor);
+                melhor.incrementarCaminhoesAtivos();
+                System.out.println("Caminhão " + pequeno.getPlaca() + " enviado para " + melhor.getNome());
+            }
+        }
+    }
+
+    public boolean isHorarioDePico(int tempoMinutoSimulado) {
+        int minutoNoDia = tempoMinutoSimulado % 1440;
+        return (minutoNoDia >= 420 && minutoNoDia <= 539) || (minutoNoDia >= 1020 && minutoNoDia <= 1139);
+    }
+
+    public int tempoViagemZona(ZonaUrbana zona, boolean pico) {
+        return pico ? zona.getVariacaoPico() : zona.getVariacaoNormal();
     }
 }

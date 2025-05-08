@@ -68,6 +68,17 @@ public class Lista<T> {
         return false;
     }
 
+    public T obter(int indice) {
+        if (indice < 0 || indice >= tamanho) {
+            throw new IndexOutOfBoundsException("Índice inválido: " + indice);
+        }
+        No atual = head;
+        for (int i = 0; i < indice; i++) {
+            atual = atual.prox;
+        }
+        return atual.dado;
+    }
+
     public boolean estaVazia() {
         return tamanho == 0;
     }

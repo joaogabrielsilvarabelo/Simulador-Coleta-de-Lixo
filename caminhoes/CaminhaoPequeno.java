@@ -1,5 +1,7 @@
 package caminhoes;
 
+import zonas.ZonaUrbana;
+
 public class CaminhaoPequeno {
     protected int capacidade;
     protected int cargaAtual;
@@ -7,18 +9,19 @@ public class CaminhaoPequeno {
     private static String id;
     protected int limiteViagens;
     protected int viagensFeitas;
-    private static final String[] ESTADO_CAMINHAO_PEQUENO = {"DISPONÍVEL", "COLETANDO", "INDO__ESTAÇÃO", "FILA_ESTAÇÃO", "DESCARREGANDO", "ENCERRADO"};
     protected int status;
+    private ZonaUrbana zonaAtual;
+    private ZonaUrbana zonaBase;
 
-    public CaminhaoPequeno(int escolha, int maxViagens, String placaOpcional) {
+    public CaminhaoPequeno(int escolha, int maxViagens, ZonaUrbana zonaBase, String placaOpcional) {
         this.cargaAtual = 0;
         this.capacidade = determinarCapacidade(escolha);
         CaminhaoPequeno.id = processarPlaca(placaOpcional);
         this.status = 0;
     }
 
-    public CaminhaoPequeno(int escolha, int maxViagens) {
-        this(escolha, maxViagens, null);
+    public CaminhaoPequeno(int escolha, int maxViagens, ZonaUrbana zonaBase) {
+        this(escolha, maxViagens,zonaBase  ,null);
     }
 
     private int determinarCapacidade(int escolha) {
@@ -28,11 +31,24 @@ public class CaminhaoPequeno {
         return OPCOES[escolha - 1];
     }
 
-    private String determinarEstado(int status) {
-        if (status < 1 || status > 6) {
-            throw new IllegalArgumentException("Escolha deve ser de 1 a 6.");
-        }
-        return ESTADO_CAMINHAO_PEQUENO[status - 1];
+    public int getEstado() {
+        return status;
+    }
+
+    public void setEstado(int status) {
+        this.status = status;
+    }
+
+    public String determinarEstado(int status) {
+        return switch (status) {
+            case 1 -> "DISPONÍVEL";
+            case 2 -> "COLETANDO";
+            case 3 -> "INDO_ESTAÇÃO";
+            case 4 -> "FILA_ESTAÇÃO";
+            case 5 -> "DESCARREGANDO";
+            case 6 -> "ENCERRADO";
+            default -> "DESCONHECIDO";
+        };
     }
 
     private static String processarPlaca(String placaOpcional) {
@@ -55,6 +71,19 @@ public class CaminhaoPequeno {
         return viagensFeitas < limiteViagens;
     }
 
+
+    public void setZonaAtual(ZonaUrbana zona) {
+        this.zonaAtual = zona;
+    }
+
+    public ZonaUrbana getZonaAtual() {
+        return zonaAtual;
+    }
+
+    public ZonaUrbana getZonaBase() {
+        return zonaBase;
+    }
+
     public boolean coletar(int quantidade) {
         if (cargaAtual + quantidade <= capacidade) {
             cargaAtual += quantidade;
@@ -65,6 +94,10 @@ public class CaminhaoPequeno {
 
     public int getCapacidade() {
         return capacidade;
+    }
+
+    public int getViagensFeitas() {
+        return viagensFeitas;
     }
 
     public boolean estaCheio() {

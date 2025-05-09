@@ -1,0 +1,27 @@
+package estacoes;
+
+import caminhoes.CaminhaoPequeno;
+
+public class ResultadoProcessamentoFila {
+    private CaminhaoPequeno caminhaoProcessado;
+    private int tempoDeEspera;
+    private boolean foiProcessado;
+
+    public ResultadoProcessamentoFila(CaminhaoPequeno caminhao, int tempoDeEspera, boolean foiProcessado) {
+        this.caminhaoProcessado = caminhao;
+        this.tempoDeEspera = tempoDeEspera;
+        this.foiProcessado = foiProcessado;
+    }
+
+    public CaminhaoPequeno getCaminhaoProcessado() {
+        return caminhaoProcessado;
+    }
+
+    public int getTempoDeEspera() {
+        return tempoDeEspera;
+    }
+
+    public boolean foiProcessado() {
+        return foiProcessado;
+    }
+}

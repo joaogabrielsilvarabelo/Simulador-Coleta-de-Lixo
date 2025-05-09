@@ -15,11 +15,11 @@ public class ZonaUrbana {
     private static final int[] VARIACOES_NORMAL =  {0, 5, -5, 3, -10};
     private static final int[][] distanciasZonas = {
             // Sul, Norte, Centro, Leste, Sudeste
-            { 0, 8, 3, 5, 4 },  // Sul
-            { 8, 0, 5, 4, 6 },  // Norte
-            { 3, 5, 0, 2, 3 },  // Centro
-            { 5, 4, 2, 0, 3 },  // Leste
-            { 4, 6, 3, 3, 0 }   // Sudeste
+            {  0, 13, 14, 11, 11 },  // Sul
+            { 13,  0, 11,  9, 16 },  // Norte
+            { 14, 11,  0,  9, 16 },  // Centro
+            { 11,  9,  9,  0, 13 },  // Leste
+            { 11, 16, 16, 13,  0 }   // Sudeste
     };
     private int caminhoesAtivos = 0;
     private static int VARIACAO_TRANSITO_PICO = 0;
@@ -57,6 +57,7 @@ public class ZonaUrbana {
 
     public void gerarLixo() {
         int quantidade = new Random().nextInt(lixoMin, lixoMax);
+        lixoAcumulado += quantidade;
         System.out.println("Zona " + nome + ": Gerou " + quantidade + "kg de lixo. Total: " + lixoAcumulado + "kg.");
     }
     

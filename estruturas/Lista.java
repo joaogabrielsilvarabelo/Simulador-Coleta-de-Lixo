@@ -57,6 +57,26 @@ public class Lista<T> {
         tamanho--;
     }
 
+    public T remover(int indice) {
+        if (indice < 0 || indice >= tamanho) {
+            throw new IndexOutOfBoundsException("Índice inválido: " + indice);
+        }
+        No atual = head;
+        No anterior = null;
+        for (int i = 0; i < indice; i++) {
+            anterior = atual;
+            atual = atual.prox;
+        }
+        T dado = atual.dado;
+        if (anterior == null) {
+            head = atual.prox;
+        } else {
+            anterior.prox = atual.prox;
+        }
+        tamanho--;
+        return dado;
+    }
+
     public boolean contem(T dado) {
         No atual = head;
         while (atual != null) {

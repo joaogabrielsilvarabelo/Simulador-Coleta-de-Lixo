@@ -1,10 +1,12 @@
+import simulacao.InterfaceSimulador;
+import simulacao.Simulador;
 import zonas.ZonaUrbana;
 
 import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-       //Simulador simulador = new Simulador();
+       //simulaçao.Simulador simulador = new simulaçao.Simulador();
         //       simulador.iniciar();
         //        try {
         //            Thread.sleep(3000); // espera 3000 milissegundos (3 segundos)
@@ -33,12 +35,16 @@ public class Main {
         //        System.out.println("A fila após a remoção é");
         //        filaCircular.imprimirFila();
 
-          ZonaUrbana norte = new ZonaUrbana(1, 4, 10);
-            System.out.println("A zona é:" + norte.getNome());
-            norte.gerarLixo();
-            System.out.println("A variação de pico é:" + norte.getVariacaoPico());
-            System.out.println("A variação normal é:" + norte.getVariacaoNormal());
+//          ZonaUrbana norte = new ZonaUrbana(1, 4, 10);
+//            System.out.println("A zona é:" + norte.getNome());
+//            norte.gerarLixo();
+//            System.out.println("A variação de pico é:" + norte.getVariacaoPico());
+//            System.out.println("A variação normal é:" + norte.getVariacaoNormal());
 
+
+       Simulador simulador = new Simulador();
+       InterfaceSimulador interfaceCLI = new InterfaceSimulador(simulador);
+       interfaceCLI.iniciar();
 
 
         //ZonaUrbana norte = new ZonaUrbana("Norte");
@@ -67,8 +73,6 @@ public class Main {
         //        CaminhaoGrande ErroGrande = new CaminhaoGrande("ERROO0O");
         //        System.out.println("------------------------");
         //        System.out.println("A placa é:" + ErroGrande.getPlaca());
-
-
 
 
         // Este exemplo simples apenas inicia a simulação.

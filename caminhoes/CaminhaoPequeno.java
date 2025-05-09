@@ -1,27 +1,36 @@
 package caminhoes;
 
 import zonas.ZonaUrbana;
+import estacoes.EstacaoTransferencia;
 
 public class CaminhaoPequeno {
     protected int capacidade;
     protected int cargaAtual;
     protected static final int[] OPCOES = {2000, 4000, 8000, 10000};
-    private static String id;
+    private String id;
     protected int limiteViagens;
-    protected int viagensFeitas;
+    public int viagensFeitas;
     protected int status;
     private ZonaUrbana zonaAtual;
     private ZonaUrbana zonaBase;
+    private EstacaoTransferencia estacaoDestino;
+    private int tempoViagemRestante;
 
     public CaminhaoPequeno(int escolha, int maxViagens, ZonaUrbana zonaBase, String placaOpcional) {
         this.cargaAtual = 0;
         this.capacidade = determinarCapacidade(escolha);
-        CaminhaoPequeno.id = processarPlaca(placaOpcional);
-        this.status = 0;
+        this.id = processarPlaca(placaOpcional);
+        this.limiteViagens = maxViagens;
+        this.viagensFeitas = 0;
+        this.status = 1; // DISPONÍVEL
+        this.zonaBase = zonaBase;
+        this.zonaAtual = zonaBase;
+        this.estacaoDestino = null;
+        this.tempoViagemRestante = 0;
     }
 
     public CaminhaoPequeno(int escolha, int maxViagens, ZonaUrbana zonaBase) {
-        this(escolha, maxViagens,zonaBase  ,null);
+        this(escolha, maxViagens, zonaBase, null);
     }
 
     private int determinarCapacidade(int escolha) {
@@ -51,7 +60,7 @@ public class CaminhaoPequeno {
         };
     }
 
-    private static String processarPlaca(String placaOpcional) {
+    private String processarPlaca(String placaOpcional) {
         if (placaOpcional != null) {
             if (!Placa.validarPlaca(placaOpcional)) {
                 throw new IllegalArgumentException("Placa não segue normas do Mercosul");
@@ -67,10 +76,9 @@ public class CaminhaoPequeno {
         return id;
     }
 
-    public boolean limiteAtingido(int viagensFeitas){
-        return viagensFeitas < limiteViagens;
+    public boolean limiteAtingido(int viagensFeitas) {
+        return viagensFeitas >= limiteViagens;
     }
-
 
     public void setZonaAtual(ZonaUrbana zona) {
         this.zonaAtual = zona;
@@ -84,12 +92,11 @@ public class CaminhaoPequeno {
         return zonaBase;
     }
 
-    public boolean coletar(int quantidade) {
-        if (cargaAtual + quantidade <= capacidade) {
-            cargaAtual += quantidade;
-            return true;
-        }
-        return false;
+    public int coletar(int quantidade) {
+        int espacoLivre = capacidade - cargaAtual;
+        int coletado = Math.min(quantidade, espacoLivre);
+        cargaAtual += coletado;
+        return coletado;
     }
 
     public int getCapacidade() {
@@ -112,5 +119,26 @@ public class CaminhaoPequeno {
 
     public int getCargaAtual() {
         return cargaAtual;
+    }
+
+    // Added methods to fix errors
+    public void definirTempoViagem(int minutos) {
+        this.tempoViagemRestante = minutos;
+    }
+
+    public void setEstacaoDestino(EstacaoTransferencia estacao) {
+        this.estacaoDestino = estacao;
+    }
+
+    public EstacaoTransferencia getEstacaoDestino() {
+        return estacaoDestino;
+    }
+
+    public boolean processarViagem() {
+        if (tempoViagemRestante > 0) {
+            tempoViagemRestante--;
+            return tempoViagemRestante == 0;
+        }
+        return true;
     }
 }

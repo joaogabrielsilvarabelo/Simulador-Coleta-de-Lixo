@@ -7,40 +7,29 @@ import estacoes.EstacaoTransferencia;
 import estacoes.ResultadoProcessamentoFila;
 import estruturas.Lista;
 import zonas.ZonaUrbana;
-import java.util.Random;
+
 
 public class Simulador {
-    private DistribuicaoCaminhoes distribuicaoCaminhoes;
-    private Lista<CaminhaoPequeno> todosOsCaminhoesPequenos;
-    private Lista<ZonaUrbana> listaZonas;
-    private Lista<EstacaoTransferencia> listaEstacoes;
-    private Lista<CaminhaoGrande> caminhoesGrandesDisponiveis;
-    private Estatisticas estatisticas;
-    private int tempoSimulado;
+    private final DistribuicaoCaminhoes distribuicaoCaminhoes;
+    private Lista<CaminhaoPequeno> caminhoesPequenos;
+    private Lista<ZonaUrbana> zonas;
+    private Lista<EstacaoTransferencia> estacoes;
+    private final Lista<CaminhaoGrande> caminhoesGrandesDisponiveis;
+    private final Estatisticas estatisticas;
+    private static int tempoSimulado;
     private int totalCaminhoesGrandesCriados;
     private int toleranciaCaminhoesGrandes;
     private boolean rodando;
     private boolean pausado;
 
-    private static final int PICO_MANHA_INICIO = 7 * 60;
-    private static final int PICO_MANHA_FIM = 9 * 60 - 1;
-    private static final int PICO_MEIO_DIA_INICIO = 12 * 60;
-    private static final int PICO_MEIO_DIA_FIM = 13 * 60 - 1;
-    private static final int PICO_TARDE_INICIO = 17 * 60;
-    private static final int PICO_TARDE_FIM = 19 * 60 - 1;
-    private static final int TEMPO_MIN_VIAGEM_NORMAL = 15;
-    private static final int TEMPO_MAX_VIAGEM_NORMAL = 45;
-    private static final int TEMPO_MIN_VIAGEM_PICO = 30;
-    private static final int TEMPO_MAX_VIAGEM_PICO = 90;
-    private static final int TEMPO_MINUTOS_POR_DIA = 24 * 60;
 
     public Simulador() {
-        this.todosOsCaminhoesPequenos = new Lista<>();
-        this.listaZonas = new Lista<>();
-        this.listaEstacoes = new Lista<>();
+        this.caminhoesPequenos = new Lista<>();
+        this.zonas = new Lista<>();
+        this.estacoes = new Lista<>();
         this.caminhoesGrandesDisponiveis = new Lista<>();
         this.estatisticas = new Estatisticas();
-        this.distribuicaoCaminhoes = null;
+        this.distribuicaoCaminhoes = new DistribuicaoCaminhoes();
         this.tempoSimulado = 0;
         this.totalCaminhoesGrandesCriados = 0;
         this.toleranciaCaminhoesGrandes = 0;
@@ -49,18 +38,15 @@ public class Simulador {
     }
 
     public void setListaZonas(Lista<ZonaUrbana> zonas) {
-        this.listaZonas = zonas;
-        if (zonas != null && !zonas.estaVazia()) {
-            this.distribuicaoCaminhoes = new DistribuicaoCaminhoes();
-        }
+        this.zonas = zonas;
     }
 
     public void setListaCaminhoesPequenos(Lista<CaminhaoPequeno> caminhoes) {
-        this.todosOsCaminhoesPequenos = caminhoes;
+        this.caminhoesPequenos = caminhoes;
     }
 
     public void setListaEstacoes(Lista<EstacaoTransferencia> estacoes) {
-        this.listaEstacoes = estacoes;
+        this.estacoes = estacoes;
     }
 
     public void setToleranciaCaminhoesGrandes(int tolerancia) {
@@ -75,28 +61,28 @@ public class Simulador {
         if (!rodando) {
             rodando = true;
             pausado = false;
-            System.out.println("Simulação iniciada.");
+            log("Simulação iniciada.");
             new Thread(this::executarSimulacao).start();
         } else {
-            System.out.println("Simulação já está rodando!");
+            log("Simulação já está rodando!");
         }
     }
 
     public void pausar() {
         if (rodando && !pausado) {
             pausado = true;
-            System.out.println("Simulação pausada.");
+            log("Simulação pausada.");
         } else {
-            System.out.println("Simulação não está rodando ou já está pausada!");
+            log("Simulação não está rodando ou já está pausada!");
         }
     }
 
     public void continuarSimulacao() {
         if (rodando && pausado) {
             pausado = false;
-            System.out.println("Simulação continuada.");
+            log("Simulação continuada.");
         } else {
-            System.out.println("Simulação não está pausada ou não foi iniciada!");
+            log("Simulação não está pausada ou não foi iniciada!");
         }
     }
 
@@ -104,7 +90,7 @@ public class Simulador {
         if (rodando) {
             rodando = false;
             pausado = false;
-            System.out.println("Simulação encerrada.");
+            log("Simulação encerrada.");
             estatisticas.imprimirRelatorio();
         }
     }
@@ -115,9 +101,9 @@ public class Simulador {
                 atualizarSimulacao();
             }
             try {
-                Thread.sleep(100); // Simula 1 minuto a cada 100ms
+                Thread.sleep(100);
             } catch (InterruptedException e) {
-                System.out.println("Erro na simulação: " + e.getMessage());
+                log("Erro na simulação: " + e.getMessage());
             }
         }
     }
@@ -125,125 +111,233 @@ public class Simulador {
     private void atualizarSimulacao() {
         tempoSimulado++;
         if (tempoSimulado % 60 == 0) {
-            for (int i = 0; i < listaZonas.getTamanho(); i++) {
-                listaZonas.obter(i).gerarLixo();
-            }
+            gerarLixoZonas();
             estatisticas.setTempoSimulado(tempoSimulado);
             estatisticas.imprimirRelatorio();
         }
-        distribuirCaminhoesOciosos();
+        if (tempoSimulado % 10 == 0) {
+            distribuirCaminhoesOciosos();
+        }
         processarCaminhoesPequenos();
         processarEstacoes();
     }
 
+    private void gerarLixoZonas() {
+        for (int i = 0; i < zonas.getTamanho(); i++) {
+            zonas.obter(i).gerarLixo();
+        }
+    }
+
+    public void disponibilizarCaminhoes(){
+    }
+
     private void distribuirCaminhoesOciosos() {
-        if (distribuicaoCaminhoes != null && !listaZonas.estaVazia()) {
-            int distribuidos = distribuicaoCaminhoes.distribuirCaminhoes(todosOsCaminhoesPequenos, listaZonas);
+        if (!zonas.estaVazia()) {
+            int distribuidos = distribuicaoCaminhoes.distribuirCaminhoes(caminhoesPequenos, zonas);
             if (distribuidos > 0) {
-                System.out.println(distribuidos + " caminhões distribuídos.");
+                log(distribuidos + " caminhão(ões) distribuído(s).");
+            } else {
+                log("Nenhum caminhão distribuído.");
             }
         }
-    }
-
-    private boolean isHorarioDePico(int tempoMinutos) {
-        int minutosNoDia = tempoMinutos % TEMPO_MINUTOS_POR_DIA;
-        return (minutosNoDia >= PICO_MANHA_INICIO && minutosNoDia <= PICO_MANHA_FIM) ||
-                (minutosNoDia >= PICO_MEIO_DIA_INICIO && minutosNoDia <= PICO_MEIO_DIA_FIM) ||
-                (minutosNoDia >= PICO_TARDE_INICIO && minutosNoDia <= PICO_TARDE_FIM);
-    }
-
-    private int calcularTempoViagem(ZonaUrbana origem, ZonaUrbana destino) {
-        int minutosNoDia = tempoSimulado % TEMPO_MINUTOS_POR_DIA;
-        int min, max, variacao;
-        if (isHorarioDePico(minutosNoDia)) {
-            min = TEMPO_MIN_VIAGEM_PICO;
-            max = TEMPO_MAX_VIAGEM_PICO;
-            variacao = origem.getVariacaoPico() + destino.getVariacaoPico();
-        } else {
-            min = TEMPO_MIN_VIAGEM_NORMAL;
-            max = TEMPO_MAX_VIAGEM_NORMAL;
-            variacao = origem.getVariacaoNormal() + destino.getVariacaoNormal();
-        }
-        return Math.max(1, new Random().nextInt(max - min + 1) + min + variacao);
     }
 
     private void processarCaminhoesPequenos() {
-        for (int i = 0; i < todosOsCaminhoesPequenos.getTamanho(); i++) {
-            CaminhaoPequeno caminhao = todosOsCaminhoesPequenos.obter(i);
-            if (caminhao.limiteAtingido(caminhao.getViagensFeitas())) {
+        ZonaStats[] zonaStats = inicializarZonaStats();
+        processarColetas(zonaStats);
+        atualizarZonas(zonaStats);
+        if (tempoSimulado % 60 == 0) {
+            logTentativasSemColeta(zonaStats);
+        }
+
+        //Procura por caminhoes em zonas com 0 lixo e os torna disponível
+        for (int i = 0; i < caminhoesPequenos.getTamanho(); i++) {
+            CaminhaoPequeno caminhao = caminhoesPequenos.obter(i);
+            if (caminhao.getEstado() == 2 && caminhao.getZonaAtual() != null && caminhao.getZonaAtual().getLixoAcumulado() == 0) {
+                caminhao.setEstado(1); // DISPONÍVEL
+                caminhao.getZonaAtual().decrementarCaminhoesAtivos(); // Reduz os caminhões ativos na zona
+                log(String.format("Caminhão %s em %s (sem lixo) agora disponível.",
+                        caminhao.getPlaca(), caminhao.getZonaAtual().getNome()));
+            }
+        }
+        processarCaminhoesEmTransito();
+    }
+
+    private ZonaStats[] inicializarZonaStats() {
+        ZonaStats[] zonaStats = new ZonaStats[zonas.getTamanho()];
+        for (int i = 0; i < zonas.getTamanho(); i++) {
+            zonaStats[i] = new ZonaStats(zonas.obter(i).getLixoAcumulado());
+        }
+        return zonaStats;
+    }
+
+    private void processarColetas(ZonaStats[] zonaStats) {
+        for (int i = 0; i < caminhoesPequenos.getTamanho(); i++) {
+            CaminhaoPequeno caminhao = caminhoesPequenos.obter(i);
+            if (caminhao.limiteAtingido(caminhao.getViagensFeitas()) || caminhao.getEstado() != 2) {
                 continue;
             }
-            if (caminhao.getEstado() == 2) { // COLETANDO
-                if (!caminhao.estaCheio() && caminhao.getZonaAtual() != null) {
-                    int lixoDisponivel = caminhao.getZonaAtual().getLixoAcumulado();
-                    int coletado = caminhao.coletar(lixoDisponivel);
-                    System.out.printf("Caminhão %s (estado: %s) tentou coletar %dkg em %s, coletou %dkg, carga atual: %d/%dkg%n",
+            if (!caminhao.estaCheio() && caminhao.getZonaAtual() != null) {
+                processarColetaCaminhao(caminhao, zonaStats);
+            }
+            if (caminhao.estaCheio()) {
+                enviarCaminhaoParaEstacao(caminhao);
+            }
+        }
+        processarCaminhoesEmTransito();
+    }
+
+    private void processarColetaCaminhao(CaminhaoPequeno caminhao, ZonaStats[] zonaStats) {
+        for (int j = 0; j < zonas.getTamanho(); j++) {
+            if (zonas.obter(j) == caminhao.getZonaAtual()) {
+                ZonaStats stats = zonaStats[j];
+                stats.caminhoes++;
+                stats.capacidadeTotal += caminhao.getCapacidade();
+                int lixoDisponivel = stats.caminhoes > 0 && stats.capacidadeTotal > 0 ?
+                        (int) ((double) caminhao.getCapacidade() / stats.capacidadeTotal * stats.lixoDisponivel) : 0;
+                int coletado = caminhao.coletar(lixoDisponivel);
+                stats.coletas.adicionar(coletado);
+                if (coletado > 0) {
+                    log(String.format("Caminhão %s (estado: %s) coletou %dkg em %s, carga atual: %d/%dkg",
                             caminhao.getPlaca(), caminhao.determinarEstado(caminhao.getEstado()),
-                            lixoDisponivel, caminhao.getZonaAtual().getNome(), coletado, caminhao.getCargaAtual(), caminhao.getCapacidade());
-                    if (coletado > 0) {
-                        caminhao.getZonaAtual().coletarLixo(coletado);
-                        estatisticas.registrarColeta(coletado, caminhao.getZonaAtual().getNome());
-                    }
+                            coletado, caminhao.getZonaAtual().getNome(), caminhao.getCargaAtual(), caminhao.getCapacidade()));
+                    estatisticas.registrarColeta(coletado, caminhao.getZonaAtual().getNome());
+                } else {
+                    stats.semColeta++;
                 }
-                if (caminhao.estaCheio()) {
-                    EstacaoTransferencia estacao = escolherEstacao();
-                    if (estacao != null) {
-                        int tempoViagem = calcularTempoViagem(caminhao.getZonaAtual(), caminhao.getZonaBase());
-                        caminhao.definirTempoViagem(tempoViagem);
-                        caminhao.setEstado(3); // INDO_ESTAÇÃO
-                        caminhao.setZonaAtual(null);
-                        caminhao.setEstacaoDestino(estacao);
-                        caminhao.viagensFeitas++;
-                        System.out.printf("Caminhão %s cheio, indo para %s (viagem: %dmin)%n",
-                                caminhao.getPlaca(), estacao.getNome(), tempoViagem);
-                    }
-                }
-            } else if (caminhao.getEstado() == 3) { // INDO_ESTAÇÃO
-                if (caminhao.processarViagem()) {
+                break;
+            }
+        }
+    }
+
+    private void enviarCaminhaoParaEstacao(CaminhaoPequeno caminhao) {
+        if (caminhao.estaCheio() && caminhao.getCargaAtual() > 0) {
+            EstacaoTransferencia estacao = escolherEstacao(caminhao);
+            if (estacao != null) {
+                int tempoViagem = DistribuicaoCaminhoes.calcularTempoViagem(caminhao.getZonaAtual(), estacao.getZonaDaEstacao());
+                caminhao.definirTempoViagem(tempoViagem);
+                caminhao.setEstado(3); // EM_TRÂNSITO
+                caminhao.getZonaAtual().decrementarCaminhoesAtivos();
+                caminhao.setZonaDestino(null); // Limpa zonaDestino
+                caminhao.setEstacaoDestino(estacao);
+                caminhao.viagensFeitas++;
+                log(String.format("Caminhão %s cheio, indo para %s (viagem: %dmin, carga: %dkg)",
+                        caminhao.getPlaca(), estacao.getNome(), tempoViagem, caminhao.getCargaAtual()));
+            }
+        } else {
+            // Se o caminhão tem 0 carga, torne-o disponível
+            caminhao.setEstado(1); // DISPONÍVEL
+            log(String.format("Caminhão %s não enviado à estação (carga: %dkg), agora disponível",
+                    caminhao.getPlaca(), caminhao.getCargaAtual()));
+        }
+    }
+
+    private void processarCaminhoesEmTransito() {
+        for (int i = 0; i < caminhoesPequenos.getTamanho(); i++) {
+            CaminhaoPequeno caminhao = caminhoesPequenos.obter(i);
+            if (caminhao.getEstado() == 3 && caminhao.processarViagem()) {
+                if (caminhao.getZonaDestino() != null) {
+                    // Indo à zona
+                    caminhao.getZonaAtual().decrementarCaminhoesAtivos(); // Diminui caminhões ativos na zona origem
+                    caminhao.setZonaAtual(caminhao.getZonaDestino());
+                    caminhao.setZonaDestino(null);
+                    caminhao.setEstado(2); // COLETANDO
+                    caminhao.getZonaAtual().incrementarCaminhoesAtivos();
+                    log(String.format("Caminhão %s chegou à zona %s, iniciando coleta",
+                            caminhao.getPlaca(), caminhao.getZonaAtual().getNome()));
+                } else if (caminhao.getEstacaoDestino() != null) {
+                    // Indo à estação
                     caminhao.setEstado(4); // FILA_ESTAÇÃO
                     caminhao.getEstacaoDestino().receberCaminhaoPequeno(caminhao, tempoSimulado);
-                    System.out.printf("Caminhão %s chegou à %s, entrou na fila%n",
-                            caminhao.getPlaca(), caminhao.getEstacaoDestino().getNome());
+                    log(String.format("Caminhão %s chegou à %s, entrou na fila",
+                            caminhao.getPlaca(), caminhao.getEstacaoDestino().getNome()));
                 }
             }
         }
     }
 
-    private EstacaoTransferencia escolherEstacao() {
+    private void atualizarZonas(ZonaStats[] zonaStats) {
+        for (int i = 0; i < zonas.getTamanho(); i++) {
+            int totalColetado = 0;
+            Lista<Integer> coletas = zonaStats[i].coletas;
+            for (int j = 0; j < coletas.getTamanho(); j++) {
+                totalColetado += coletas.obter(j);
+            }
+            if (totalColetado > 0) {
+                zonas.obter(i).coletarLixo(totalColetado);
+            }
+        }
+    }
+
+    private void logTentativasSemColeta(ZonaStats[] zonaStats) {
+        for (int i = 0; i < zonas.getTamanho(); i++) {
+            if (zonaStats[i].semColeta > 0 && zonas.obter(i).getLixoAcumulado() == 0) {
+                log(String.format("%d caminhão(ões) não conseguiu(ram) coletar em %s (sem lixo disponível)",
+                        zonaStats[i].semColeta, zonas.obter(i).getNome()));
+                zonaStats[i].semColeta = 0;
+            }
+        }
+    }
+
+    public void inicializarCaminhoesGrandes(int quantidade) {
+        for (int i = 0; i < quantidade; i++) {
+            adicionarCaminhaoGrande();
+        }
+    }
+
+    private EstacaoTransferencia escolherEstacao(CaminhaoPequeno caminhao) {
         EstacaoTransferencia melhor = null;
-        int menorFila = Integer.MAX_VALUE;
-        for (int i = 0; i < listaEstacoes.getTamanho(); i++) {
-            EstacaoTransferencia est = listaEstacoes.obter(i);
+        double melhorPontuacao = Double.MAX_VALUE; // menor custo = melhor
+
+        for (int i = 0; i < estacoes.getTamanho(); i++) {
+            EstacaoTransferencia est = estacoes.obter(i);
             int tamanhoFila = est.getFilaPequenos().getTamanho();
-            if (tamanhoFila < menorFila) {
-                menorFila = tamanhoFila;
+            int distancia = ZonaUrbana.getDistancia(est.getZonaDaEstacao().getNome(), caminhao.getZonaAtual().getNome());
+            // Pesos teste
+            double pontuacao = tamanhoFila * 10 + distancia * 5;
+
+            if (pontuacao < melhorPontuacao) {
+                melhorPontuacao = pontuacao;
                 melhor = est;
             }
+        }
+        if (melhor == null) {
+            System.out.println("Nenhuma estação adequada para o caminhão " + caminhao.getPlaca());
         }
         return melhor;
     }
 
     private void processarEstacoes() {
         int caminhoesGrandesEmUso = 0;
-        for (int i = 0; i < listaEstacoes.getTamanho(); i++) {
-            EstacaoTransferencia estacao = listaEstacoes.obter(i);
+        for (int i = 0; i < estacoes.getTamanho(); i++) {
+            EstacaoTransferencia estacao = estacoes.obter(i);
+            estacao.atualizarTempoEsperaCaminhaoGrande();
+            CaminhaoGrande cgLiberado = estacao.liberarCaminhaoGrandeSeNecessario();
+            if (cgLiberado != null) {
+                caminhoesGrandesDisponiveis.adicionar(cgLiberado);
+                log(String.format("Caminhão grande %s partiu de %s para o aterro devido à tolerância excedida.",
+                        cgLiberado.getPlaca(), estacao.getNome()));
+            }
             ResultadoProcessamentoFila resultado = estacao.processarFila(tempoSimulado);
             if (resultado.foiProcessado()) {
                 estatisticas.registrarEspera(resultado.getTempoDeEspera());
-                CaminhaoPequeno cp = resultado.getCaminhaoProcessado();
-                cp.setEstado(1); // DISPONÍVEL
-                cp.setZonaAtual(cp.getZonaBase());
-                System.out.printf("Caminhão %s processado em %s, voltou para %s%n",
-                        cp.getPlaca(), estacao.getNome(), cp.getZonaBase().getNome());
+                CaminhaoPequeno pequeno = resultado.getCaminhaoProcessado();
+                pequeno.setEstado(1); // DISPONÍVEL
+                log(String.format("Caminhão %s processado em %s, pode ser distribuído",
+                        pequeno.getPlaca(), estacao.getNome()));
             }
-            if (estacao.tempoEsperaExcedido()) {
-                System.out.println("Adicionando novo caminhão grande devido a espera excessiva em " + estacao.getNome());
-                adicionarCaminhaoGrande();
-            }
-            if (estacao.precisaCaminhaoGrande() && caminhoesGrandesDisponiveis.getTamanho() > 0) {
-                CaminhaoGrande cg = caminhoesGrandesDisponiveis.remover(0);
-                estacao.atribuirCaminhaoGrande(cg);
-                System.out.printf("Caminhão grande atribuído a %s%n", estacao.getNome());
+            if (estacao.tempoEsperaExcedido() || estacao.getFilaPequenos().getTamanho() > 0) {
+                if (!estacao.temCaminhaoGrandeFila() && !caminhoesGrandesDisponiveis.estaVazia()) {
+                    CaminhaoGrande cg = caminhoesGrandesDisponiveis.remover(0);
+                    estacao.atribuirCaminhaoGrande(cg);
+                    log(String.format("Caminhão grande atribuído a %s", estacao.getNome()));
+                } else if (!estacao.temCaminhaoGrandeFila()) {
+                    log("Adicionando novo caminhão grande para " + estacao.getNome());
+                    adicionarCaminhaoGrande();
+                    CaminhaoGrande cg = caminhoesGrandesDisponiveis.remover(0);
+                    estacao.atribuirCaminhaoGrande(cg);
+                    log(String.format("Caminhão grande atribuído a %s", estacao.getNome()));
+                }
             }
             if (estacao.temCaminhaoGrandeFila()) {
                 caminhoesGrandesEmUso++;
@@ -253,9 +347,35 @@ public class Simulador {
     }
 
     private void adicionarCaminhaoGrande() {
-        CaminhaoGrande novo = new CaminhaoGrande();
+        CaminhaoGrande novo = new CaminhaoGrande(null, toleranciaCaminhoesGrandes);
         caminhoesGrandesDisponiveis.adicionar(novo);
         totalCaminhoesGrandesCriados++;
         estatisticas.registrarNovoCaminhaoGrande();
+    }
+
+    private void log(String mensagem) {
+        synchronized (System.out) {
+            System.out.println(mensagem);
+        }
+    }
+
+    public static int getTempoSimulado(){
+        return tempoSimulado;
+    }
+
+    private static class ZonaStats {
+        int lixoDisponivel;
+        int caminhoes;
+        int capacidadeTotal;
+        int semColeta;
+        Lista<Integer> coletas;
+
+        ZonaStats(int lixoDisponivel) {
+            this.lixoDisponivel = lixoDisponivel;
+            this.caminhoes = 0;
+            this.capacidadeTotal = 0;
+            this.semColeta = 0;
+            this.coletas = new Lista<>();
+        }
     }
 }

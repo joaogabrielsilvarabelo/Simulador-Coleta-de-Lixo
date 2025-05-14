@@ -4,33 +4,34 @@ import zonas.ZonaUrbana;
 import estacoes.EstacaoTransferencia;
 
 public class CaminhaoPequeno {
-    protected int capacidade;
-    protected int cargaAtual;
-    protected static final int[] OPCOES = {2000, 4000, 8000, 10000};
-    private String id;
-    protected int limiteViagens;
+    private final int capacidade;
+    private int cargaAtual;
+    private final String id;
+    private final int limiteViagens;
     public int viagensFeitas;
-    protected int status;
+    private int status;
     private ZonaUrbana zonaAtual;
-    private ZonaUrbana zonaBase;
+    private final ZonaUrbana zonaInicial;
     private EstacaoTransferencia estacaoDestino;
     private int tempoViagemRestante;
+    private ZonaUrbana zonaDestino;
+    private static final int[] OPCOES = {2000, 4000, 8000, 10000};
 
-    public CaminhaoPequeno(int escolha, int maxViagens, ZonaUrbana zonaBase, String placaOpcional) {
+    public CaminhaoPequeno(int escolha, int maxViagens, ZonaUrbana zonaInicial, String placaOpcional) {
         this.cargaAtual = 0;
         this.capacidade = determinarCapacidade(escolha);
-        this.id = processarPlaca(placaOpcional);
+        this.id = Placa.processarPlaca(placaOpcional);
         this.limiteViagens = maxViagens;
         this.viagensFeitas = 0;
         this.status = 1; // DISPONÍVEL
-        this.zonaBase = zonaBase;
-        this.zonaAtual = zonaBase;
+        this.zonaInicial = zonaInicial;
+        this.zonaAtual = zonaInicial;
         this.estacaoDestino = null;
         this.tempoViagemRestante = 0;
     }
 
-    public CaminhaoPequeno(int escolha, int maxViagens, ZonaUrbana zonaBase) {
-        this(escolha, maxViagens, zonaBase, null);
+    public CaminhaoPequeno(int escolha, int maxViagens, ZonaUrbana zonaInicial) {
+        this(escolha, maxViagens, zonaInicial, null);
     }
 
     private int determinarCapacidade(int escolha) {
@@ -52,24 +53,12 @@ public class CaminhaoPequeno {
         return switch (status) {
             case 1 -> "DISPONÍVEL";
             case 2 -> "COLETANDO";
-            case 3 -> "INDO_ESTAÇÃO";
+            case 3 -> "EM_TRÂNSITO";
             case 4 -> "FILA_ESTAÇÃO";
             case 5 -> "DESCARREGANDO";
             case 6 -> "ENCERRADO";
             default -> "DESCONHECIDO";
         };
-    }
-
-    private String processarPlaca(String placaOpcional) {
-        if (placaOpcional != null) {
-            if (!Placa.validarPlaca(placaOpcional)) {
-                throw new IllegalArgumentException("Placa não segue normas do Mercosul");
-            }
-            if (!placaOpcional.isBlank()) {
-                return placaOpcional.toUpperCase();
-            }
-        }
-        return Placa.gerarPlaca();
     }
 
     public String getPlaca() {
@@ -88,8 +77,8 @@ public class CaminhaoPequeno {
         return zonaAtual;
     }
 
-    public ZonaUrbana getZonaBase() {
-        return zonaBase;
+    public ZonaUrbana getzonaInicial() {
+        return zonaInicial;
     }
 
     public int coletar(int quantidade) {
@@ -121,7 +110,6 @@ public class CaminhaoPequeno {
         return cargaAtual;
     }
 
-    // Added methods to fix errors
     public void definirTempoViagem(int minutos) {
         this.tempoViagemRestante = minutos;
     }
@@ -132,6 +120,14 @@ public class CaminhaoPequeno {
 
     public EstacaoTransferencia getEstacaoDestino() {
         return estacaoDestino;
+    }
+
+    public void setZonaDestino(ZonaUrbana zona) {
+        this.zonaDestino = zona;
+    }
+
+    public ZonaUrbana getZonaDestino() {
+        return zonaDestino;
     }
 
     public boolean processarViagem() {

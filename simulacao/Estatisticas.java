@@ -3,9 +3,9 @@ package simulacao;
 import estruturas.Lista;
 import zonas.ZonaEstatistica;
 
-import java.io.PrintWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 public class Estatisticas {
     private int totalLixoColetado;
@@ -13,7 +13,7 @@ public class Estatisticas {
     private int tempoTotalEsperaPequenos;
     private int descarregamentos;
     private int maxCaminhoesGrandesEmUso;
-    private Lista<ZonaEstatistica> lixoPorZona;
+    private final Lista<ZonaEstatistica> lixoPorZona;
     private int tempoSimulado;
 
     public Estatisticas() {
@@ -28,7 +28,7 @@ public class Estatisticas {
         descarregamentos = 0;
         maxCaminhoesGrandesEmUso = 0;
         tempoSimulado = 0;
-        lixoPorZona = new Lista<>();
+        lixoPorZona.limpar();
     }
 
     public void registrarColeta(int kg, String zona) {
@@ -63,14 +63,19 @@ public class Estatisticas {
         System.out.println("Tempo simulado: " + formatarTempo(tempoSimulado));
         System.out.println("Lixo total coletado: " + totalLixoColetado + " kg");
         System.out.println("Por zona:");
+        imprimirEstatisticasZonas();
+        System.out.println("Caminhões grandes usados: " + totalCaminhoesGrandesUsados);
+        System.out.println("Máximo de caminhões grandes em uso simultâneo: " + maxCaminhoesGrandesEmUso);
+        System.out.println("Número mínimo de caminhões grandes necessários: " + maxCaminhoesGrandesEmUso);
+        System.out.println("Tempo médio de espera (CP): " +
+                (descarregamentos > 0 ? tempoTotalEsperaPequenos / descarregamentos : 0) + " min");
+    }
+
+    private void imprimirEstatisticasZonas() {
         for (int i = 0; i < lixoPorZona.getTamanho(); i++) {
             ZonaEstatistica est = lixoPorZona.obter(i);
             System.out.println("  - " + est.getNomeZona() + ": " + est.getLixoColetado() + " kg");
         }
-        System.out.println("Caminhões grandes usados: " + totalCaminhoesGrandesUsados);
-        System.out.println("Máximo de caminhões grandes em uso simultâneo: " + maxCaminhoesGrandesEmUso);
-        System.out.println("Tempo médio de espera (CP): " +
-                (descarregamentos > 0 ? tempoTotalEsperaPequenos / descarregamentos : 0) + " min");
     }
 
     public void salvarRelatorio(String arquivo) throws IOException {
@@ -85,6 +90,7 @@ public class Estatisticas {
             }
             writer.println("Caminhões grandes usados: " + totalCaminhoesGrandesUsados);
             writer.println("Máximo de caminhões grandes em uso simultâneo: " + maxCaminhoesGrandesEmUso);
+            writer.println("Número mínimo de caminhões grandes necessários: " + maxCaminhoesGrandesEmUso);
             writer.println("Tempo médio de espera (CP): " +
                     (descarregamentos > 0 ? tempoTotalEsperaPequenos / descarregamentos : 0) + " min");
         }

@@ -1,37 +1,23 @@
 package caminhoes;
 
 public class CaminhaoGrande {
-    protected int capacidade = 20000;
-    protected int cargaAtual;
-    private static String id;
-    private int tempoTolerancia = 200;
+    private final int capacidade = 20000;
+    private int cargaAtual;
+    private final String id;
+    private final int tempoTolerancia;
 
-    public CaminhaoGrande(String placaOpcional) {
+    public CaminhaoGrande(String placaOpcional, int tempoTolerancia) {
         this.cargaAtual = 0;
-        CaminhaoGrande.id = processarPlaca(placaOpcional);
+        this.tempoTolerancia = tempoTolerancia;
+        this.id = Placa.processarPlaca(placaOpcional);
     }
 
     public CaminhaoGrande() {
-        this(null);
-    }
-
-    private static String processarPlaca(String placaOpcional) {
-        if (placaOpcional != null) {
-            if (!Placa.validarPlaca(placaOpcional)) {
-                throw new IllegalArgumentException("Placa não segue normas do Mercosul");
-            }
-            if (!placaOpcional.isBlank()) {
-                return placaOpcional.toUpperCase();
-            }
-        }
-        return Placa.gerarPlaca();
+        this(null, 200);
     }
 
     public void carregar(int quantidade) {
-        cargaAtual += quantidade;
-        if (cargaAtual > capacidade) {
-            cargaAtual = capacidade;
-        }
+        cargaAtual = Math.min(cargaAtual + quantidade, capacidade);
     }
 
     public boolean prontoParaPartir() {
@@ -53,5 +39,9 @@ public class CaminhaoGrande {
 
     public int getCapacidade() {
         return capacidade;
+    }
+
+    public int getTempoTolerancia() {
+        return tempoTolerancia;
     }
 }

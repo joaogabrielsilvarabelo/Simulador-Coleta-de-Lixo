@@ -1,20 +1,8 @@
 package estruturas;
 
-import java.util.NoSuchElementException;
-
 public class Lista<T> {
-    private No head;
+    private No<T> head;
     private int tamanho;
-
-    private class No {
-        T dado;
-        No prox;
-
-        public No(T dado) {
-            this.dado = dado;
-            this.prox = null;
-        }
-    }
 
     public Lista() {
         this.head = null;
@@ -22,100 +10,60 @@ public class Lista<T> {
     }
 
     public void adicionar(T dado) {
-        No novo = new No(dado);
+        No<T> novoNo = new No<>(dado);
         if (head == null) {
-            head = novo;
+            head = novoNo;
         } else {
-            No atual = head;
+            No<T> atual = head;
             while (atual.prox != null) {
                 atual = atual.prox;
             }
-            atual.prox = novo;
+            atual.prox = novoNo;
         }
         tamanho++;
-    }
-
-    public void remover(T dado) {
-        if (head == null) {
-            throw new NoSuchElementException("A lista está vazia");
-        }
-        if (head.dado.equals(dado)) {
-            head = head.prox;
-            tamanho--;
-            return;
-        }
-        No atual = head;
-        No anterior = null;
-        while (atual != null && !atual.dado.equals(dado)) {
-            anterior = atual;
-            atual = atual.prox;
-        }
-        if (atual == null) {
-            throw new NoSuchElementException("Elemento não encontrado");
-        }
-        anterior.prox = atual.prox;
-        tamanho--;
-    }
-
-    public T remover(int indice) {
-        if (indice < 0 || indice >= tamanho) {
-            throw new IndexOutOfBoundsException("Índice inválido: " + indice);
-        }
-        No atual = head;
-        No anterior = null;
-        for (int i = 0; i < indice; i++) {
-            anterior = atual;
-            atual = atual.prox;
-        }
-        T dado = atual.dado;
-        if (anterior == null) {
-            head = atual.prox;
-        } else {
-            anterior.prox = atual.prox;
-        }
-        tamanho--;
-        return dado;
-    }
-
-    public boolean contem(T dado) {
-        No atual = head;
-        while (atual != null) {
-            if (atual.dado.equals(dado)) {
-                return true;
-            }
-            atual = atual.prox;
-        }
-        return false;
     }
 
     public T obter(int indice) {
         if (indice < 0 || indice >= tamanho) {
             throw new IndexOutOfBoundsException("Índice inválido: " + indice);
         }
-        No atual = head;
+        No<T> atual = head;
         for (int i = 0; i < indice; i++) {
             atual = atual.prox;
         }
         return atual.dado;
     }
 
-    public boolean estaVazia() {
-        return tamanho == 0;
+    public T remover(int indice) {
+        if (indice < 0 || indice >= tamanho) {
+            throw new IndexOutOfBoundsException("Índice inválido: " + indice);
+        }
+        T removido;
+        if (indice == 0) {
+            removido = head.dado;
+            head = head.prox;
+        } else {
+            No<T> anterior = head;
+            for (int i = 0; i < indice - 1; i++) {
+                anterior = anterior.prox;
+            }
+            removido = anterior.prox.dado;
+            anterior.prox = anterior.prox.prox;
+        }
+        tamanho--;
+        return removido;
+    }
+
+    public void limpar() {
+        head = null;
+        tamanho = 0;
     }
 
     public int getTamanho() {
         return tamanho;
     }
 
-    public void imprimirLista() {
-        if (head == null) {
-            throw new NoSuchElementException("A lista está vazia!");
-        }
-        No atual = head;
-        while (atual != null) {
-            System.out.println(atual.dado + " ");
-            atual = atual.prox;
-        }
-        System.out.println("Lista impressa");
+    public boolean estaVazia() {
+        return tamanho == 0;
     }
 }

@@ -1,7 +1,7 @@
 package zonas;
 
 public class ZonaEstatistica {
-    private String nomeZona;
+    private final String nomeZona;
     private int lixoColetado;
 
     public ZonaEstatistica(String nomeZona) {

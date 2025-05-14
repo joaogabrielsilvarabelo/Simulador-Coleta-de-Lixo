@@ -4,18 +4,21 @@ import caminhoes.CaminhaoGrande;
 import caminhoes.CaminhaoPequeno;
 import estruturas.Fila;
 import estruturas.Lista;
+import zonas.ZonaUrbana;
 
 public class EstacaoTransferencia {
-    private String nome;
+    private final String nome;
     private int lixoArmazenado;
-    private Fila<CaminhaoPequeno> filaPequenos;
-    private Lista<CaminhaoGrande> listaGrandes;
-    private int esperaMaxPequenos;
+    private final Fila<CaminhaoPequeno> filaPequenos;
+    private final Lista<CaminhaoGrande> listaGrandes;
+    private final int esperaMaxPequenos;
     private int esperaTotalPequenos;
     private CaminhaoGrande caminhaoGrandeEsperando;
-    private boolean TEM_CAMINHAO_GRANDE_ESPERANDO;
+    private ZonaUrbana zonaDaEstacao;
+    private boolean temCaminhaoGrandeEsperando;
+    private int tempoEsperaCaminhaoGrande;
 
-    public EstacaoTransferencia(String nome, int esperaMaxPequenos) {
+    public EstacaoTransferencia(String nome, int esperaMaxPequenos, ZonaUrbana zonaDaEstacao) {
         this.nome = nome;
         this.lixoArmazenado = 0;
         this.filaPequenos = new Fila<>();
@@ -23,14 +26,14 @@ public class EstacaoTransferencia {
         this.esperaMaxPequenos = esperaMaxPequenos;
         this.esperaTotalPequenos = 0;
         this.caminhaoGrandeEsperando = null;
-        this.TEM_CAMINHAO_GRANDE_ESPERANDO = false;
+        this.zonaDaEstacao = zonaDaEstacao;
+        this.temCaminhaoGrandeEsperando = false;
+        this.tempoEsperaCaminhaoGrande = 0;
     }
 
     public void receberCaminhaoPequeno(CaminhaoPequeno caminhao, int tempoAtual) {
         filaPequenos.enfileirar(caminhao);
-        if (filaPequenos.getTamanho() == 1) {
-            this.esperaTotalPequenos = 0;
-        }
+        esperaTotalPequenos += filaPequenos.getTamanho(); // Accumulate wait time for all trucks in queue
     }
 
     public ResultadoProcessamentoFila processarFila(int tempoAtual) {
@@ -38,8 +41,8 @@ public class EstacaoTransferencia {
             esperaTotalPequenos = 0;
             return new ResultadoProcessamentoFila(null, 0, false);
         }
-        esperaTotalPequenos++;
-        if (!TEM_CAMINHAO_GRANDE_ESPERANDO || caminhaoGrandeEsperando == null) {
+        if (!temCaminhaoGrandeEsperando || caminhaoGrandeEsperando == null) {
+            esperaTotalPequenos += filaPequenos.getTamanho();
             return new ResultadoProcessamentoFila(null, esperaTotalPequenos, false);
         }
         CaminhaoPequeno caminhaoPequeno = filaPequenos.primeiroDaFila();
@@ -47,22 +50,47 @@ public class EstacaoTransferencia {
             caminhaoPequeno = filaPequenos.remover();
             int cargaDescarregada = caminhaoPequeno.descarregar();
             caminhaoGrandeEsperando.carregar(cargaDescarregada);
-            System.out.printf("Estação %s: Caminhão %s descarregou %dkg. Carga Atual: %d/%d kg. Caminhões restantes: %d.%n",
-                    nome, caminhaoPequeno.getPlaca(), cargaDescarregada,
-                    caminhaoGrandeEsperando.getCargaAtual(), caminhaoGrandeEsperando.getCapacidade(),
-                    filaPequenos.getTamanho());
-            int tempoEspera = esperaTotalPequenos;
-            esperaTotalPequenos = 0; // Reset wait time after processing
+            logProcessamento(caminhaoPequeno, cargaDescarregada);
+            int tempoEspera = filaPequenos.estaVazia() ? esperaTotalPequenos : esperaTotalPequenos / filaPequenos.getTamanho();
+            esperaTotalPequenos = 0;
             return new ResultadoProcessamentoFila(caminhaoPequeno, tempoEspera, true);
         }
+        esperaTotalPequenos += filaPequenos.getTamanho();
         return new ResultadoProcessamentoFila(null, esperaTotalPequenos, false);
     }
 
-    public boolean temCaminhaoGrandeFila() {
-        if (caminhaoGrandeEsperando == null) {
-            return TEM_CAMINHAO_GRANDE_ESPERANDO = false;
+    private void logProcessamento(CaminhaoPequeno caminhao, int cargaDescarregada) {
+        System.out.printf("%s: Caminhão %s descarregou %dkg. Carga Atual: %d/%d kg. Caminhões restantes: %d.%n",
+                nome, caminhao.getPlaca(), cargaDescarregada,
+                caminhaoGrandeEsperando.getCargaAtual(), caminhaoGrandeEsperando.getCapacidade(),
+                filaPequenos.getTamanho());
+    }
+
+    public void atualizarTempoEsperaCaminhaoGrande() {
+        if (temCaminhaoGrandeEsperando && caminhaoGrandeEsperando != null) {
+            tempoEsperaCaminhaoGrande++;
         }
-        return TEM_CAMINHAO_GRANDE_ESPERANDO = true;
+    }
+
+    public boolean toleranciaCaminhaoGrandeExcedida() {
+        return temCaminhaoGrandeEsperando && tempoEsperaCaminhaoGrande > caminhaoGrandeEsperando.getTempoTolerancia();
+    }
+
+    public CaminhaoGrande liberarCaminhaoGrandeSeNecessario() {
+        if (toleranciaCaminhaoGrandeExcedida() && caminhaoGrandeEsperando.getCargaAtual() > 0) {
+            CaminhaoGrande cg = caminhaoGrandeEsperando;
+            caminhaoGrandeEsperando = null;
+            temCaminhaoGrandeEsperando = false;
+            tempoEsperaCaminhaoGrande = 0;
+            cg.descarregar();
+            return cg;
+        }
+        return null;
+    }
+
+    public boolean temCaminhaoGrandeFila() {
+        temCaminhaoGrandeEsperando = caminhaoGrandeEsperando != null;
+        return temCaminhaoGrandeEsperando;
     }
 
     public void descarregarParaCaminhaoGrande(CaminhaoGrande caminhao) {
@@ -71,11 +99,6 @@ public class EstacaoTransferencia {
         lixoArmazenado = 0;
     }
 
-    public void adicionarCaminhaoGrande(CaminhaoGrande grande) {
-        listaGrandes.adicionar(grande);
-    }
-
-    // Added methods to fix errors
     public Fila<CaminhaoPequeno> getFilaPequenos() {
         return filaPequenos;
     }
@@ -88,12 +111,13 @@ public class EstacaoTransferencia {
         return nome;
     }
 
-    public boolean precisaCaminhaoGrande() {
-        return filaPequenos.getTamanho() > 0 && caminhaoGrandeEsperando == null;
+    public ZonaUrbana getZonaDaEstacao(){
+        return zonaDaEstacao;
     }
 
     public void atribuirCaminhaoGrande(CaminhaoGrande caminhao) {
         this.caminhaoGrandeEsperando = caminhao;
-        this.TEM_CAMINHAO_GRANDE_ESPERANDO = true;
+        this.temCaminhaoGrandeEsperando = true;
+        this.tempoEsperaCaminhaoGrande = 0;
     }
 }

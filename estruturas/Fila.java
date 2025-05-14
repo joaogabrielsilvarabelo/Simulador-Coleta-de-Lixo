@@ -31,17 +31,14 @@ public class Fila<T> {
         if (estaVazia()) {
             throw new RuntimeException("Fila vazia!");
         }
-
         T dadoRemovido = head.dado;
         head = head.prox;
-
+        tamanho--;
         if (head == null) {
             tail = null;
         } else {
             tail.prox = head;
         }
-
-        tamanho--;
         return dadoRemovido;
     }
 
@@ -64,14 +61,12 @@ public class Fila<T> {
         if (estaVazia()) {
             throw new NoSuchElementException("A fila está vazia!");
         }
-
         No<T> atual = head;
         do {
-            System.out.println(atual.dado + " ");
+            System.out.print(atual.dado + " ");
             atual = atual.prox;
         } while (atual != head);
-
-        System.out.println(" Fila impressa");
+        System.out.println("Fila impressa");
     }
 }
 

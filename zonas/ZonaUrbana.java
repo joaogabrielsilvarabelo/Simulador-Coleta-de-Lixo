@@ -3,35 +3,36 @@ package zonas;
 import java.util.Random;
 
 public class ZonaUrbana {
+    private static final String[] ZONAS = {"Norte", "Sul", "Leste", "Sudeste", "Centro"};
+    private static final int[] VARIACOES_PICO = {0, 10, -7, 5, 10};
+    private static final int[] VARIACOES_NORMAL = {0, 5, -5, 3, -10};
+    //Variação no tempo de trânsito por zona. Ex: O Centro é mais estreito e mais transitado, logo o tempo de trânsito dele
+    //é maior do que o de outras zonas, a variação é baseada na zona Norte, portanto ela tem 0 0 de variação
+    //Essa variação irá adicionar ou remover tempos de trânsito dependendo da zona
+    private static final int[][] DISTANCIAS_ZONAS = {
+            //   Sul  N   C   L  Sud
+            {0, 13, 14, 11, 11},  // Sul
+            {13, 0, 11, 9, 16},   // Norte
+            {14, 11, 0, 9, 16},   // Centro
+            {11, 9,  9, 0, 13},    // Leste
+            {11, 16, 16, 13, 0}   // Sudeste
+    };
     private final String nome;
     private int lixoAcumulado;
     private final int lixoMin;
     private final int lixoMax;
-    private static final String[] ZONAS = {"Norte", "Sul", "Leste", "Sudeste", "Centro"};
-    //Variação no tempo de trânsito por zona. Ex: O Centro é mais estreito e mais transitado, logo o tempo de trânsito dele
-    //é maior do que o de outras zonas, a variação é baseada na zona Norte, portanto ela tem 0 0 de variação
-    //Essa variação irá adicionar ou remover tempos de trânsito dependendo da zona
-    private static final int[] VARIACOES_PICO =    {0, 10, -7, 5, 10};
-    private static final int[] VARIACOES_NORMAL =  {0, 5, -5, 3, -10};
-    private static final int[][] distanciasZonas = {
-            // Sul, Norte, Centro, Leste, Sudeste
-            {  0, 13, 14, 11, 11 },  // Sul
-            { 13,  0, 11,  9, 16 },  // Norte
-            { 14, 11,  0,  9, 16 },  // Centro
-            { 11,  9,  9,  0, 13 },  // Leste
-            { 11, 16, 16, 13,  0 }   // Sudeste
-    };
-    private int caminhoesAtivos = 0;
-    private static int VARIACAO_TRANSITO_PICO = 0;
-    private static int VARIACAO_TRANSITO_NORMAL = 0;
+    private final int variacaoPico;
+    private final int variacaoNormal;
+    private int caminhoesAtivos;
 
     public ZonaUrbana(int escolha, int lixoMin, int lixoMax) {
         this.nome = determinarZona(escolha);
-        VARIACAO_TRANSITO_PICO = VARIACOES_PICO[escolha - 1];
-        VARIACAO_TRANSITO_NORMAL = VARIACOES_NORMAL[escolha - 1];
-        this.lixoAcumulado = 0;
         this.lixoMin = lixoMin;
         this.lixoMax = lixoMax;
+        this.variacaoPico = VARIACOES_PICO[escolha - 1];
+        this.variacaoNormal = VARIACOES_NORMAL[escolha - 1];
+        this.lixoAcumulado = 0;
+        this.caminhoesAtivos = 0;
     }
 
     private String determinarZona(int escolha) {
@@ -41,26 +42,31 @@ public class ZonaUrbana {
         return ZONAS[escolha - 1];
     }
 
+    public static int getDistancia(String zonaA, String zonaB) {
+        int i = getIndiceZona(zonaA);
+        int j = getIndiceZona(zonaB);
+        if (i == -1 || j == -1) {
+            return Integer.MAX_VALUE;
+        }
+        return DISTANCIAS_ZONAS[i][j];
+    }
+
     private static int getIndiceZona(String nome) {
         for (int i = 0; i < ZONAS.length; i++) {
-            if (ZONAS[i].equalsIgnoreCase(nome)) return i;
+            if (ZONAS[i].equalsIgnoreCase(nome)) {
+                return i;
+            }
         }
         return -1;
     }
 
-    public static int getDistancia(String zonaA, String zonaB) {
-        int i = getIndiceZona(zonaA);
-        int j = getIndiceZona(zonaB);
-        if (i == -1 || j == -1) return Integer.MAX_VALUE;
-        return distanciasZonas[i][j];
+    public int gerarLixo() {
+        int quantidade = new Random().nextInt(lixoMin, lixoMax + 1);
+        lixoAcumulado += quantidade;
+        log(String.format("Zona %s: Gerou %dkg de lixo. Total: %dkg.", nome, quantidade, lixoAcumulado));
+        return quantidade;
     }
 
-    public void gerarLixo() {
-        int quantidade = new Random().nextInt(lixoMin, lixoMax);
-        lixoAcumulado += quantidade;
-        System.out.println("Zona " + nome + ": Gerou " + quantidade + "kg de lixo. Total: " + lixoAcumulado + "kg.");
-    }
-    
     public int coletarLixo(int quantidade) {
         int coletado = Math.min(quantidade, lixoAcumulado);
         lixoAcumulado -= coletado;
@@ -72,7 +78,9 @@ public class ZonaUrbana {
     }
 
     public void decrementarCaminhoesAtivos() {
-        if (caminhoesAtivos > 0) caminhoesAtivos--;
+        if (caminhoesAtivos > 0) {
+            caminhoesAtivos--;
+        }
     }
 
     public int getLixoAcumulado() {
@@ -84,14 +92,18 @@ public class ZonaUrbana {
     }
 
     public int getVariacaoPico() {
-        return VARIACAO_TRANSITO_PICO;
+        return variacaoPico;
     }
 
     public int getVariacaoNormal() {
-        return VARIACAO_TRANSITO_NORMAL;
+        return variacaoNormal;
     }
 
     public int getCaminhoesAtivos() {
         return caminhoesAtivos;
+    }
+
+    private void log(String mensagem) {
+        System.out.println(mensagem);
     }
 }

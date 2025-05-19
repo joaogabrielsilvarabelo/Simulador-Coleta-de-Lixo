@@ -31,17 +31,14 @@ public class Fila<T> {
         if (estaVazia()) {
             throw new RuntimeException("Fila vazia!");
         }
-
         T dadoRemovido = head.dado;
         head = head.prox;
-
+        tamanho--;
         if (head == null) {
             tail = null;
         } else {
             tail.prox = head;
         }
-
-        tamanho--;
         return dadoRemovido;
     }
 
@@ -52,6 +49,21 @@ public class Fila<T> {
         return head.dado;
     }
 
+    // Obtém o elemento no índice especificado
+    public T obter(int indice) {
+        if (estaVazia()) {
+            throw new NoSuchElementException("A fila está vazia!");
+        }
+        if (indice < 0 || indice >= tamanho) {
+            throw new IndexOutOfBoundsException("Índice inválido: " + indice);
+        }
+        No<T> atual = head;
+        for (int i = 0; i < indice; i++) {
+            atual = atual.prox;
+        }
+        return atual.dado;
+    }
+
     public boolean estaVazia() {
         return tamanho == 0;
     }
@@ -59,19 +71,6 @@ public class Fila<T> {
     public int getTamanho() {
         return tamanho;
     }
-
-    public void imprimirFila() {
-        if (estaVazia()) {
-            throw new NoSuchElementException("A fila está vazia!");
-        }
-
-        No<T> atual = head;
-        do {
-            System.out.println(atual.dado + " ");
-            atual = atual.prox;
-        } while (atual != head);
-
-        System.out.println(" Fila impressa");
-    }
 }
+
 

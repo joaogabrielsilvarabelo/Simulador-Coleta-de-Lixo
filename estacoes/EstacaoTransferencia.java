@@ -73,11 +73,27 @@ public class EstacaoTransferencia {
     }
     // Processa a fila de caminhões pequenos e transferências para caminhões grandes
     public ResultadoProcessamentoFila processarFila(int tempoAtual) {
-        // Atualiza tempo de espera de todos os caminhões na fila
+        int esperaAcumulada = 0;
+        // Atualiza tempo de espera e verifica excedentes
         for (int i = 0; i < filaPequenos.getTamanho(); i++) {
             CaminhaoPequeno caminhao = filaPequenos.obter(i);
             caminhao.incrementarTempoEspera();
+            esperaAcumulada += caminhao.getTempoEsperaFila();
+            // Verifica se o tempo máximo de espera foi excedido
+            if (caminhao.getTempoEsperaFila() > esperaMaxPequenos) {
+                LoggerSimulacao.log("ERRO", String.format("%s: Caminhão %s excedeu tempo máximo de espera (%d min)", nome, caminhao.getPlaca(), esperaMaxPequenos));
+                // Redireciona para outra estação
+                EstacaoTransferencia outraEstacao = escolherOutraEstacao();
+                if (outraEstacao != null) {
+                    filaPequenos.remover();
+                    int tempoViagem = DistribuicaoCaminhoes.calcularTempoViagem(caminhao.getZonaAtual(), outraEstacao.getZonaDaEstacao());
+                    caminhao.definirTempoViagem(tempoViagem);
+                    caminhao.setEstacaoDestino(outraEstacao);
+                    LoggerSimulacao.log("INFO", String.format("Caminhão %s redirecionado para %s (viagem: %dmin)", caminhao.getPlaca(), outraEstacao.getNome(), tempoViagem));
+                }
+            }
         }
+        esperaTotalPequenos += esperaAcumulada;
         // Se não há caminhões pequenos na fila nem lixo armazenado, reseta estados
         if (filaPequenos.estaVazia() && lixoArmazenado == 0) {
             tempoProcessamentoRestante = 0;
@@ -105,34 +121,27 @@ public class EstacaoTransferencia {
         // Prioriza descarregamento de caminhões pequenos se há fila
         if (!filaPequenos.estaVazia()) {
             CaminhaoPequeno caminhaoPequeno = filaPequenos.primeiroDaFila();
-            // Se há caminhão grande disponível e espaço suficiente, descarrega diretamente
+            int cargaDescarregada = caminhaoPequeno.getCargaAtual();
+            int tempoEspera = caminhaoPequeno.getTempoEsperaFila();
             if (temCaminhaoGrandeEsperando && caminhaoGrandeEsperando != null &&
-                    caminhaoGrandeEsperando.getCargaAtual() + caminhaoPequeno.getCargaAtual() <= caminhaoGrandeEsperando.getCapacidade()) {
+                    caminhaoGrandeEsperando.getCargaAtual() + cargaDescarregada <= caminhaoGrandeEsperando.getCapacidade()) {
                 caminhaoPequeno = filaPequenos.remover();
-                int cargaDescarregada = caminhaoPequeno.descarregar();
                 caminhaoGrandeEsperando.carregar(cargaDescarregada);
                 LoggerSimulacao.log("DESCARGA", String.format("%s: Caminhão %s descarregou %dkg diretamente no caminhão grande %s",
                         nome, caminhaoPequeno.getPlaca(), cargaDescarregada, caminhaoGrandeEsperando.getPlaca()));
-                int tempoEspera = caminhaoPequeno.getTempoEsperaFila();
-                caminhaoPequeno.resetarTempoEspera();
-                tempoProcessamentoRestante = TEMPO_PROCESSAMENTO_PEQUENO;
-                processandoGrande = false;
-                return new ResultadoProcessamentoFila(caminhaoPequeno, tempoEspera, true);
             } else {
-                // Descarrega no armazenamento da estação
                 caminhaoPequeno = filaPequenos.remover();
-                int cargaDescarregada = caminhaoPequeno.descarregar();
                 lixoArmazenado += cargaDescarregada;
                 LoggerSimulacao.log("DESCARGA", String.format("%s: Caminhão %s descarregou %dkg no armazenamento. Lixo armazenado: %dkg",
                         nome, caminhaoPequeno.getPlaca(), cargaDescarregada, lixoArmazenado));
-                int tempoEspera = caminhaoPequeno.getTempoEsperaFila();
-                caminhaoPequeno.resetarTempoEspera();
-                tempoProcessamentoRestante = TEMPO_PROCESSAMENTO_PEQUENO;
-                processandoGrande = false;
-                return new ResultadoProcessamentoFila(caminhaoPequeno, tempoEspera, true);
             }
+            caminhaoPequeno.descarregar();
+            caminhaoPequeno.resetarTempoEspera();
+            tempoProcessamentoRestante = TEMPO_PROCESSAMENTO_PEQUENO;
+            processandoGrande = false;
+            return new ResultadoProcessamentoFila(caminhaoPequeno, tempoEspera, true);
         }
-        // Processa transferência de lixo armazenado para caminhão grande, se aplicável
+        // Processa transferência de lixo armazenado para caminhão grande
         if (temCaminhaoGrandeEsperando && caminhaoGrandeEsperando != null && lixoArmazenado > 0 && !processandoGrande) {
             int cargaTransferir = Math.min(lixoArmazenado, caminhaoGrandeEsperando.getCapacidade() - caminhaoGrandeEsperando.getCargaAtual());
             if (cargaTransferir > 0) {
@@ -152,7 +161,7 @@ public class EstacaoTransferencia {
             temCaminhaoGrandeEsperando = true;
             tempoEsperaCaminhaoGrande = 0;
             listaGrandes.adicionar(caminhao);
-            LoggerSimulacao.log("INFO", String.format("%s: Caminhão grande %s atribuído", nome, caminhao.getPlaca()));
+            LoggerSimulacao.log("ATRIBUICAO", String.format("%s: Caminhão grande %s atribuído", nome, caminhao.getPlaca()));
         } else {
             LoggerSimulacao.log("ERRO", String.format("%s: Já existe um caminhão grande (%s) atribuído", nome, caminhaoGrandeEsperando.getPlaca()));
         }
@@ -165,42 +174,42 @@ public class EstacaoTransferencia {
     public void atualizarTempoEsperaCaminhaoGrande() {
         if (temCaminhaoGrandeEsperando && caminhaoGrandeEsperando != null) {
             tempoEsperaCaminhaoGrande++;
-            if (LoggerSimulacao.ModoLog.DEBUG == LoggerSimulacao.getModoLog()) {
-                LoggerSimulacao.log("INFO", String.format("%s: Caminhão grande %s esperando há %d minutos",
-                        nome, caminhaoGrandeEsperando.getPlaca(), tempoEsperaCaminhaoGrande));
-            }
         }
     }
-    // Libera o caminhão grande se a tolerância de espera for excedida
+    // Libera o caminhão grande se necessário (cheio, tolerância excedida ou sem lixo)
     public CaminhaoGrande liberarCaminhaoGrandeSeNecessario() {
         if (temCaminhaoGrandeEsperando && caminhaoGrandeEsperando != null &&
-                tempoEsperaCaminhaoGrande >= caminhaoGrandeEsperando.getToleranciaEspera() &&
                 caminhaoGrandeEsperando.getCargaAtual() > 0) {
-            CaminhaoGrande liberado = caminhaoGrandeEsperando;
-            Simulador.getEstatisticas().registrarLixoAterro(liberado.getCargaAtual()); // Registrar lixo no aterro
-            caminhaoGrandeEsperando = null;
-            temCaminhaoGrandeEsperando = false;
-            tempoEsperaCaminhaoGrande = 0;
-            LoggerSimulacao.log("DESCARGA", String.format("%s: Caminhão grande %s liberado para o aterro com %dkg (tolerância excedida)",
-                    nome, liberado.getPlaca(), liberado.getCargaAtual()));
-            return liberado;
+            // Verifica condições para liberação
+            boolean toleranciaExcedida = tempoEsperaCaminhaoGrande >= caminhaoGrandeEsperando.getToleranciaEspera();
+            boolean caminhaoCheio = caminhaoGrandeEsperando.getCargaAtual() == caminhaoGrandeEsperando.getCapacidade();
+            boolean semLixoDisponivel = lixoArmazenado == 0 && filaPequenos.estaVazia();
+            if (toleranciaExcedida || caminhaoCheio || semLixoDisponivel) {
+                CaminhaoGrande liberado = caminhaoGrandeEsperando;
+                int carga = liberado.getCargaAtual();
+                // Define estação de origem
+                liberado.setEstacaoOrigem(this);
+                // Define estação de destino (pode ser ajustado para outra estação)
+                liberado.setEstacaoDestino(this); // Por padrão, retorna à mesma estação
+                // Calcula tempo de viagem para o aterro
+                int tempoViagem = DistribuicaoCaminhoes.calcularTempoViagem(zonaDaEstacao, Simulador.getZonaAterro());
+                liberado.iniciarViagemParaAterro(tempoViagem);
+                caminhaoGrandeEsperando = null;
+                temCaminhaoGrandeEsperando = false;
+                tempoEsperaCaminhaoGrande = 0;
+                LoggerSimulacao.log("DESCARGA", String.format("%s: Caminhão grande %s liberado para o aterro com %dkg (motivo: %s)",
+                        nome, liberado.getPlaca(), carga,
+                        caminhaoCheio ? "caminhão cheio" : semLixoDisponivel ? "sem lixo disponível" : "tolerância excedida"));
+                return liberado;
+            }
         }
         return null;
     }
     // Getters
-    public String getNome() {
-        return nome;
-    }
-
-    public Fila<CaminhaoPequeno> getFilaPequenos() {
-        return filaPequenos;
-    }
-
-    public ZonaUrbana getZonaDaEstacao() {
-        return zonaDaEstacao;
-    }
-
-    public boolean temCaminhaoGrandeFila() {
-        return temCaminhaoGrandeEsperando;
-    }
+    public String getNome() { return nome; }
+    public Fila<CaminhaoPequeno> getFilaPequenos() { return filaPequenos; }
+    public ZonaUrbana getZonaDaEstacao() { return zonaDaEstacao; }
+    public boolean temCaminhaoGrandeFila() { return temCaminhaoGrandeEsperando; }
 }
+
+

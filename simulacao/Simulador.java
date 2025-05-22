@@ -10,15 +10,19 @@ import zonas.ZonaUrbana;
 
 // Gerencia a simulação de coleta e transporte de lixo
 public class Simulador {
+    private static int[][] intervalosLixo;
     private final DistribuicaoCaminhoes distribuicaoCaminhoes;
     private static Lista<CaminhaoPequeno> caminhoesPequenos;
     private static Lista<ZonaUrbana> zonas;
     private static Lista<EstacaoTransferencia> estacoes;
     private static Lista<CaminhaoGrande> caminhoesGrandesDisponiveis;
+    // Lista de caminhões grandes em trânsito (viagem, descarregamento ou retorno)
+    private static Lista<CaminhaoGrande> caminhoesGrandesOcupados = new Lista<>();
+    private static Lista<CaminhaoGrande> todosCaminhoesGrandes = new Lista<>();
+    private static ZonaUrbana zonaAterro;
     private static final Estatisticas estatisticas = new Estatisticas();
     private static int caminhoesPorZona;
     private static int tempoSimulado;
-    private static int totalCaminhoesGrandesCriados;
     private static int toleranciaCaminhoesGrandes;
     private static final int TEMPO_MINUTOS_POR_DIA = 24 * 60;
     private boolean rodando;
@@ -32,7 +36,6 @@ public class Simulador {
         this.distribuicaoCaminhoes = new DistribuicaoCaminhoes();
         caminhoesPorZona = 0;
         tempoSimulado = 0;
-        totalCaminhoesGrandesCriados = 0;
         toleranciaCaminhoesGrandes = 0;
         this.rodando = false;
         this.pausado = false;
@@ -137,6 +140,7 @@ public class Simulador {
         }
         processarCaminhoesPequenos();
         processarEstacoes();
+        processarCaminhoesGrandesOcupados();
         // Imprime relatório a cada hora
         if (tempoSimulado % 60 == 0) {
             estatisticas.setTempoSimulado(tempoSimulado);
@@ -261,12 +265,10 @@ public class Simulador {
                     if (!caminhoesGrandesDisponiveis.estaVazia()) {
                         CaminhaoGrande grande = caminhoesGrandesDisponiveis.remover(0);
                         estacao.atribuirCaminhaoGrande(grande);
-                        LoggerSimulacao.log("INFO", String.format("Caminhão grande %s atribuído a %s para limpar lixo residual.", grande.getPlaca(), estacao.getNome()));
+                        LoggerSimulacao.log("ATRIBUICAO", String.format("Caminhão grande %s atribuído a %s para limpar lixo residual.", grande.getPlaca(), estacao.getNome()));
                     } else {
-                        adicionarCaminhaoGrande();
-                        CaminhaoGrande grande = caminhoesGrandesDisponiveis.remover(0);
-                        estacao.atribuirCaminhaoGrande(grande);
-                        LoggerSimulacao.log("INFO", String.format("Novo caminhão grande %s atribuído a %s para limpar lixo residual.", grande.getPlaca(), estacao.getNome()));
+                        adicionarCaminhaoGrande(estacao);
+                        LoggerSimulacao.log("ATRIBUICAO", String.format("Novo caminhão grande atribuído diretamente a %s para limpar lixo residual.", estacao.getNome()));
                     }
                 }
                 // Transfere o máximo possível de lixo
@@ -286,7 +288,7 @@ public class Simulador {
                     int carga = grande.getCargaAtual();
                     grande.descarregar();
                     caminhoesGrandesDisponiveis.adicionar(grande);
-                    LoggerSimulacao.log("DESCARGA", String.format("Caminhão grande %s partiu de %s para o aterro com %dkg.", grande.getPlaca(), estacao.getNome(), carga));
+                    LoggerSimulacao.log("VIAGEM", String.format("Caminhão grande %s partiu de %s para o aterro con %dkg.", grande.getPlaca(), estacao.getNome(), carga));
                 }
             }
         }
@@ -304,7 +306,7 @@ public class Simulador {
                 int carga = grande.getCargaAtual();
                 grande.descarregar();
                 caminhoesGrandesDisponiveis.adicionar(grande);
-                LoggerSimulacao.log("DESCARGA", String.format("Caminhão grande %s partiu de %s para o aterro com %dkg (fim do dia).",
+                LoggerSimulacao.log("VIAGEM", String.format("Caminhão grande %s partiu de %s para o aterro com %dkg (fim do dia).",
                         grande.getPlaca(), estacao.getNome(), carga));
             }
         }
@@ -335,37 +337,65 @@ public class Simulador {
     private void processarCaminhoesPequenos() {
         ZonaStats[] zonaStats = inicializarZonaStats();
         processarColetas(zonaStats);
-        atualizarZonas(zonaStats);
         if (tempoSimulado % 60 == 0) {
             logTentativasSemColeta(zonaStats);
         }
-        // Procura por caminhões em zonas com 0 lixo e os torna disponível
+        // Procura por caminhões em zonas com 0 lixo ou que terminaram a coleta
         for (int i = 0; i < caminhoesPequenos.getTamanho(); i++) {
             CaminhaoPequeno caminhao = caminhoesPequenos.obter(i);
             caminhao.isLimiteAtingido(caminhao.getViagensFeitas());
             if (caminhao.getEstado() == 6) { // ENCERRADO
                 continue; // Pula caminhões encerrados
             }
-            if (caminhao.getEstado() == 2 && caminhao.getZonaAtual() != null && caminhao.getZonaAtual().getLixoAcumulado() == 0) {
-                caminhao.setEstado(1); // DISPONÍVEL
-                caminhao.getZonaAtual().decrementarCaminhoesAtivos();
-                LoggerSimulacao.log("INFO", String.format("Caminhão %s em %s (sem lixo) agora disponível.",
-                        caminhao.getPlaca(), caminhao.getZonaAtual().getNome()));
+            if (caminhao.getEstado() == 2 && caminhao.getZonaAtual() != null) {
+                if (caminhao.getZonaAtual().getLixoAcumulado() == 0 && caminhao.getTempoColetaRestante() == 0) {
+                    // Sem lixo na zona e sem coleta em andamento
+                    caminhao.setEstado(1); // DISPONÍVEL
+                    caminhao.getZonaAtual().decrementarCaminhoesAtivos();
+                    LoggerSimulacao.log("INFO", String.format("Caminhão %s em %s (sem lixo ou coleta concluída) agora disponível para redistribuição.",
+                            caminhao.getPlaca(), caminhao.getZonaAtual().getNome()));
+                } else if (caminhao.getTempoColetaRestante() == 0 && !caminhao.estaCheio()) {
+                    // Coleta concluída, mas caminhão não está cheio
+                    int lixoColetado = caminhao.coletar(caminhao.getZonaAtual().getLixoAcumulado());
+                    if (lixoColetado == 0 && caminhao.getCargaAtual() == 0) {
+                        caminhao.setEstado(1); // DISPONÍVEL
+                        caminhao.getZonaAtual().decrementarCaminhoesAtivos();
+                        LoggerSimulacao.log("INFO", String.format("Caminhão %s em %s não coletou (sem lixo suficiente) e agora está disponível para redistribuição.",
+                                caminhao.getPlaca(), caminhao.getZonaAtual().getNome()));
+                    }
+                }
             }
         }
         processarCaminhoesEmTransito();
     }
 
-    protected static void inicializarZonas() {
-        zonas.adicionar(new ZonaUrbana(1, 2900 * 24, 5000 * 24)); // Norte
-        zonas.adicionar(new ZonaUrbana(2, 3500 * 24, 6500 * 24)); // Sul
-        zonas.adicionar(new ZonaUrbana(3, 3900 * 24, 6800 * 24)); // Leste
-        zonas.adicionar(new ZonaUrbana(4, 2800 * 24, 5500 * 24)); // Sudeste
-        zonas.adicionar(new ZonaUrbana(5, 3500 * 24, 6000 * 24)); // Centro
+    // Processa caminhões grandes em trânsito
+    private void processarCaminhoesGrandesOcupados() {
+        for (int i = caminhoesGrandesOcupados.getTamanho() - 1; i >= 0; i--) {
+            CaminhaoGrande caminhao = caminhoesGrandesOcupados.obter(i);
+            // Atualiza estado do caminhão
+            if (caminhao.atualizarEstado()) {
+                // Caminhão retornou à estação, remove da lista
+                caminhoesGrandesOcupados.remover(i);
+                caminhoesGrandesDisponiveis.adicionar(caminhao);
+                LoggerSimulacao.log("INFO", String.format("Caminhão grande %s disponível novamente após retorno", caminhao.getPlaca()));
+            }
+        }
+    }
+
+    // Inicializa as zonas com intervalos de lixo configuráveis
+    public static void inicializarZonas(int[][] intervalos) {
+        intervalosLixo = intervalos;
+        zonas.limpar();
+        for (int i = 0; i < 5; i++) {
+            ZonaUrbana zona = new ZonaUrbana(i, intervalosLixo[i][0], intervalosLixo[i][1]);
+            zonas.adicionar(zona);
+            LoggerSimulacao.log("CONFIG", String.format("Zona %s inicializada com intervalo de lixo [%d, %d]kg.", zona.getNome(), intervalosLixo[i][0], intervalosLixo[i][1]));
+        }
     }
 
     // Inicializa caminhões pequenos com capacidades e zonas iniciais
-    protected static void inicializarCaminhoes(int qtd2t, int qtd4t, int qtd8t, int qtd10t) {
+    protected static void inicializarCaminhoes(int qtd2t, int qtd4t, int qtd8t, int qtd10t, int limiteViagens) {
         int totalCaminhoes = qtd2t + qtd4t + qtd8t + qtd10t;
         int TOTAL_ZONAS = 5;
         caminhoesPorZona = totalCaminhoes / TOTAL_ZONAS;
@@ -382,11 +412,16 @@ public class Simulador {
                 // Escolher tipo de caminhão
                 for (int k = 0; k < quantidades.length; k++) {
                     if (quantidades[k] > 0) {
-                        CaminhaoPequeno caminhao = new CaminhaoPequeno(k + 1, 20, zonaInicial);
-                        caminhao.setEstado(1); // DISPONÍVEL
+                        CaminhaoPequeno caminhao = new CaminhaoPequeno(k + 1, limiteViagens, zonaInicial);
+                        caminhao.setEstado(2); // COLETANDO
                         caminhoesPequenos.adicionar(caminhao);
+                        zonaInicial.incrementarCaminhoesAtivos(); // Incrementa caminhões ativos na zona
                         quantidades[k]--;
                         caminhaoIdx++;
+                        if (LoggerSimulacao.ModoLog.DEBUG == LoggerSimulacao.getModoLog()) {
+                            LoggerSimulacao.log("INFO", String.format("Caminhão %s inicializado em %s, estado COLETANDO.",
+                                    caminhao.getPlaca(), zonaInicial.getNome()));
+                        }
                         break;
                     }
                 }
@@ -397,6 +432,10 @@ public class Simulador {
     protected static void inicializarEstacoes(int tempoMaxEspera, ZonaUrbana zonaEstacaoA, ZonaUrbana zonaEstacaoB) {
         estacoes.adicionar(new EstacaoTransferencia("Estação A", tempoMaxEspera, zonaEstacaoA));
         estacoes.adicionar(new EstacaoTransferencia("Estação B", tempoMaxEspera, zonaEstacaoB));
+    }
+
+    public static void inicializarAterro(ZonaUrbana zona) {
+        zonaAterro = zona;
     }
 
     // Inicializa estatísticas das zonas para processamento de coletas
@@ -418,10 +457,7 @@ public class Simulador {
             // Processa tempo de coleta em andamento
             if (caminhao.getTempoColetaRestante() > 0) {
                 if (caminhao.processarColeta()) {
-                    LoggerSimulacao.log("COLETA", String.format("Caminhão %s terminou de coletar em %s, carga atual: %d/%dkg",
-                            caminhao.getPlaca(), caminhao.getZonaAtual().getNome(),
-                            caminhao.getCargaAtual(), caminhao.getCapacidade()));
-                    // Envia à estação se estiver cheio
+                    // Coleta concluída, verifica se está cheio
                     if (caminhao.estaCheio()) {
                         enviarCaminhaoParaEstacao(caminhao);
                     }
@@ -443,17 +479,14 @@ public class Simulador {
                 ZonaStats stats = zonaStats[j];
                 stats.caminhoes++;
                 stats.capacidadeTotal += caminhao.getCapacidade();
+                // Calcula lixo disponível proporcional à capacidade
                 int lixoDisponivel = stats.caminhoes > 0 && stats.capacidadeTotal > 0 ?
                         (int) ((double) caminhao.getCapacidade() / stats.capacidadeTotal * stats.lixoDisponivel) : 0;
                 int coletado = caminhao.coletar(lixoDisponivel);
-                stats.coletas.adicionar(coletado);
-                if (coletado > 0) {
-                    LoggerSimulacao.log("COLETA", String.format("Caminhão %s coletou %dkg em %s, carga atual: %d/%dkg",
-                            caminhao.getPlaca(), coletado, caminhao.getZonaAtual().getNome(), caminhao.getCargaAtual(), caminhao.getCapacidade()));
-                    estatisticas.registrarColeta(coletado, caminhao.getZonaAtual().getNome());
-                } else {
+                if (coletado <= 0) {
                     stats.semColeta++;
                 }
+                stats.coletas.adicionar(coletado);
                 break;
             }
         }
@@ -470,7 +503,7 @@ public class Simulador {
                 caminhao.setZonaDestino(null);
                 caminhao.setEstacaoDestino(estacao);
                 caminhao.viagensFeitas++;
-                LoggerSimulacao.log("INFO", String.format("Caminhão %s cheio, indo para %s (viagem: %dmin, carga: %dkg)",
+                LoggerSimulacao.log("VIAGEM", String.format("Caminhão %s cheio, indo para %s (viagem: %dmin, carga: %dkg)",
                         caminhao.getPlaca(), estacao.getNome(), tempoViagem, caminhao.getCargaAtual()));
             }
         } else {
@@ -512,20 +545,6 @@ public class Simulador {
         }
     }
 
-    // Atualiza o lixo acumulado nas zonas com base nas coletas
-    private void atualizarZonas(ZonaStats[] zonaStats) {
-        for (int i = 0; i < zonas.getTamanho(); i++) {
-            int totalColetado = 0;
-            Lista<Integer> coletas = zonaStats[i].coletas;
-            for (int j = 0; j < coletas.getTamanho(); j++) {
-                totalColetado += coletas.obter(j);
-            }
-            if (totalColetado > 0) {
-                zonas.obter(i).coletarLixo(totalColetado);
-            }
-        }
-    }
-
     private void logTentativasSemColeta(ZonaStats[] zonaStats) {
         for (int i = 0; i < zonas.getTamanho(); i++) {
             if (zonaStats[i].semColeta > 0 && zonas.obter(i).getLixoAcumulado() == 0) {
@@ -536,9 +555,13 @@ public class Simulador {
         }
     }
 
-    public static void inicializarCaminhoesGrandes(int quantidade) {
-        for (int i = 0; i < quantidade; i++) {
-            adicionarCaminhaoGrande();
+    // Inicializa caminhões grandes, atribuindo diretamente às estações
+    protected static void inicializarCaminhoesGrandes(int quantidade) {
+        for (int i = 0; i < estacoes.getTamanho(); i++) {
+            EstacaoTransferencia estacao = estacoes.obter(i);
+            if (i < quantidade) {
+                adicionarCaminhaoGrande(estacao); // Atribui caminhão grande à estação
+            }
         }
     }
 
@@ -570,10 +593,11 @@ public class Simulador {
         for (int i = 0; i < estacoes.getTamanho(); i++) {
             EstacaoTransferencia estacao = estacoes.obter(i);
             estacao.atualizarTempoEsperaCaminhaoGrande();
-            // Libera caminhão grande se tolerância for excedida
+            // Libera caminhão grande se necessário
             CaminhaoGrande grandeLiberado = estacao.liberarCaminhaoGrandeSeNecessario();
             if (grandeLiberado != null) {
-                caminhoesGrandesDisponiveis.adicionar(grandeLiberado);
+                adicionarCaminhaoGrandeOcupado(grandeLiberado); // Move para lista de ocupados
+                estatisticas.liberarCaminhaoGrande(); // Decrementa contador
             }
             // Processa fila de caminhões pequenos ou transferência para caminhão grande
             ResultadoProcessamentoFila resultado = estacao.processarFila(tempoSimulado);
@@ -581,8 +605,7 @@ public class Simulador {
                 estatisticas.registrarEspera(resultado.getTempoDeEspera());
                 CaminhaoPequeno pequeno = resultado.getCaminhaoProcessado();
                 pequeno.setEstado(1); // DISPONÍVEL
-                LoggerSimulacao.log("DESCARGA", String.format("Caminhão %s processado em %s, pode ser distribuído",
-                        pequeno.getPlaca(), estacao.getNome()));
+                LoggerSimulacao.log("DESCARGA", String.format("Caminhão %s processado em %s, pode ser distribuído", pequeno.getPlaca(), estacao.getNome()));
             }
             // Atribui caminhão grande se necessário
             if (estacao.tempoEsperaExcedido() || estacao.getFilaPequenos().getTamanho() > 0) {
@@ -590,12 +613,14 @@ public class Simulador {
                     CaminhaoGrande grande = null;
                     if (!caminhoesGrandesDisponiveis.estaVazia()) {
                         grande = caminhoesGrandesDisponiveis.remover(0);
+                        estacao.atribuirCaminhaoGrande(grande);
+                        estatisticas.registrarCaminhaoGrandeEmUso(); // Incrementa contador
+                        LoggerSimulacao.log("INFO", String.format("Caminhão grande %s atribuído a %s", grande.getPlaca(), estacao.getNome()));
                     } else {
-                        adicionarCaminhaoGrande();
-                        grande = caminhoesGrandesDisponiveis.remover(0);
+                        adicionarCaminhaoGrande(estacao);
+                        estatisticas.registrarCaminhaoGrandeEmUso(); // Incrementa contador
+                        LoggerSimulacao.log("INFO", String.format("Novo caminhão grande atribuído diretamente a %s", estacao.getNome()));
                     }
-                    estacao.atribuirCaminhaoGrande(grande);
-                    LoggerSimulacao.log("INFO", String.format("Caminhão grande %s atribuído a %s", grande.getPlaca(), estacao.getNome()));
                 }
             }
             if (estacao.temCaminhaoGrandeFila()) {
@@ -606,12 +631,22 @@ public class Simulador {
         estatisticas.atualizarMaxCaminhoesGrandesEmUso(caminhoesGrandesEmUso);
     }
 
-    private static void adicionarCaminhaoGrande() {
-        CaminhaoGrande novo = new CaminhaoGrande(null, toleranciaCaminhoesGrandes);
-        caminhoesGrandesDisponiveis.adicionar(novo);
-        totalCaminhoesGrandesCriados++;
+    // Adiciona um novo caminhão grande e o atribui diretamente a uma estação
+    private static void adicionarCaminhaoGrande(EstacaoTransferencia estacao) {
+        CaminhaoGrande novo = new CaminhaoGrande(toleranciaCaminhoesGrandes);
+        todosCaminhoesGrandes.adicionar(novo); // Adiciona à lista de todos os caminhões grandes
         estatisticas.registrarNovoCaminhaoGrande();
-        LoggerSimulacao.log("INFO", String.format("Novo caminhão grande %s adicionado.", novo.getPlaca()));
+        if (estacao != null) {
+            estacao.atribuirCaminhaoGrande(novo);
+        } else {
+            caminhoesGrandesDisponiveis.adicionar(novo);
+            LoggerSimulacao.log("INFO", String.format("Novo caminhão grande %s adicionado à lista de disponíveis.", novo.getPlaca()));
+        }
+    }
+
+    // Adiciona um caminhão grande à lista de ocupados
+    private static void adicionarCaminhaoGrandeOcupado(CaminhaoGrande caminhao) {
+        caminhoesGrandesOcupados.adicionar(caminhao);
     }
 
     protected static void configurarSimuladorParams(int tolerancia) {
@@ -634,8 +669,16 @@ public class Simulador {
         return zonas;
     }
 
+    public static ZonaUrbana getZonaAterro(){
+        return zonaAterro;
+    }
+
     protected static Lista<CaminhaoPequeno> getCaminhoesPequenos() {
         return caminhoesPequenos;
+    }
+
+    protected static Lista<CaminhaoGrande> getCaminhoesGrandes() {
+        return todosCaminhoesGrandes;
     }
 
     // Classe interna para estatísticas de zonas durante coletas
@@ -655,3 +698,5 @@ public class Simulador {
         }
     }
 }
+
+

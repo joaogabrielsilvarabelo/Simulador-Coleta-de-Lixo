@@ -1,4 +1,3 @@
-
 import simulacao.InterfaceSimulador;
 import simulacao.Simulador;
 

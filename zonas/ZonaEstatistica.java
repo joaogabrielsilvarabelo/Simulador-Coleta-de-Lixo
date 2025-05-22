@@ -1,4 +1,3 @@
-
 package zonas;
 
 public class ZonaEstatistica {
@@ -13,18 +12,6 @@ public class ZonaEstatistica {
         this.lixoGerado = 0;
     }
 
-    public String getNomeZona() {
-        return nomeZona;
-    }
-
-    public int getLixoColetado() {
-        return lixoColetado;
-    }
-
-    public int getLixoGerado() {
-        return lixoGerado;
-    }
-
     public void adicionarLixo(int kg) {
         this.lixoColetado += kg;
     }
@@ -32,5 +19,10 @@ public class ZonaEstatistica {
     public void adicionarLixoGerado(int kg) {
         this.lixoGerado += kg;
     }
+
+    public String getNomeZona() { return nomeZona;}
+    public int getLixoColetado() {return lixoColetado; }
+    public int getLixoGerado() { return lixoGerado; }
 }
+
 

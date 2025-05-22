@@ -1,15 +1,16 @@
+
 package caminhoes;
 
 import estruturas.Lista;
 import simulacao.LoggerSimulacao;
 import simulacao.Simulador;
+import zonas.ZonaEstatistica;
 import zonas.ZonaUrbana;
 
 import java.util.Random;
 
 public class DistribuicaoCaminhoes {
     private final int limiteCaminhoesPorZona = calcularLimiteCaminhoesPorZona();
-    private static final int DISTANCIA_MAXIMA = 50;
     private static final int caminhoesPorZona = Simulador.getCaminhoesPorZona();
 
     private static final int PICO_MANHA_INICIO = 7 * 60;
@@ -20,8 +21,8 @@ public class DistribuicaoCaminhoes {
     private static final int PICO_TARDE_FIM = 19 * 60 - 1;
     private static final int TEMPO_MINUTOS_POR_DIA = 24 * 60;
     // Velocidades médias em km/h
-    private static final double VELOCIDADE_MEDIA_NORMAL = 30.0; // Fora de pico
-    private static final double VELOCIDADE_MEDIA_PICO = 20.0;   // Em pico
+    private static final double VELOCIDADE_MEDIA_NORMAL = 30.0;
+    private static final double VELOCIDADE_MEDIA_PICO = 20.0;
     // Margem de aleatoriedade (+/- 10%)
     private static final double MARGEM_ALEATORIA = 0.1;
 
@@ -30,6 +31,7 @@ public class DistribuicaoCaminhoes {
         return Math.max(2, caminhoesPorZona + 1);
     }
 
+    // Distribui caminhões pequenos disponíveis para zonas com lixo
     public int distribuirCaminhoes(Lista<CaminhaoPequeno> caminhoes, Lista<ZonaUrbana> zonas) {
         int distribuidos = 0;
         for (int i = 0; i < caminhoes.getTamanho(); i++) {
@@ -37,11 +39,12 @@ public class DistribuicaoCaminhoes {
             if (isCaminhaoDisponivel(caminhao)) {
                 ZonaUrbana melhorZona = encontrarMelhorZona(caminhao, zonas);
                 ZonaUrbana zonaAtual = caminhao.getZonaAtual();
-                // Se todas as zonas foram rejeitadas, é provavelmente porque todas tiveram o lixo coletado pelo dia
+                // Se não há zonas válidas, encerra o caminhão pelo dia
                 if (melhorZona == null) {
                     LoggerSimulacao.log("INFO", "Caminhão " + caminhao.getPlaca() + " não tem destino para viajar, será determinado como ENCERRADO pelo dia");
                     caminhao.setEstado(6); // ENCERRADO
                 } else if (melhorZona != zonaAtual) {
+                    // Redistribui para nova zona
                     int tempoViagem = calcularTempoViagem(caminhao.getZonaAtual(), melhorZona);
                     caminhao.definirTempoViagem(tempoViagem);
                     caminhao.setEstado(3); // EM_TRÂNSITO
@@ -50,7 +53,8 @@ public class DistribuicaoCaminhoes {
                     LoggerSimulacao.log("INFO", String.format("Caminhão %s será redistribuído de %s para %s (viagem: %dmin)",
                             caminhao.getPlaca(), caminhao.getZonaAtual().getNome(), melhorZona.getNome(), tempoViagem));
                 } else {
-                    LoggerSimulacao.log("INFO", "Caminhão " + caminhao.getPlaca() + " permanecerá na Zona " + caminhao.getZonaAtual().getNome() + " e começará a coletar");
+                    // Permanece na zona atual e coleta
+                    LoggerSimulacao.log("INFO", "Caminhão " + caminhao.getPlaca() + " já está na zona " + zonaAtual.getNome() + ", iniciando coleta");
                     caminhao.setEstado(2); // COLETANDO
                 }
             } else if (LoggerSimulacao.ModoLog.DEBUG == LoggerSimulacao.getModoLog()) {
@@ -71,35 +75,55 @@ public class DistribuicaoCaminhoes {
                 (minutosNoDia >= PICO_TARDE_INICIO && minutosNoDia <= PICO_TARDE_FIM);
     }
 
-    public static int calcularTempoViagem(ZonaUrbana origem, ZonaUrbana destino) {
+    // Calcula o tempo base de viagem entre zonas
+    public static double calcularTempoViagemBase(ZonaUrbana origem, ZonaUrbana destino) {
         if (origem == null || destino == null) {
             LoggerSimulacao.log("ERRO", "Origem ou destino nulo. Usando tempo padrão.");
-            return 15; // Tempo padrão em minutos
+            return 15.0; // Tempo padrão em minutos
         }
         // Obtém a distância entre as zonas
         int distancia = ZonaUrbana.getDistancia(origem.getNome(), destino.getNome());
         if (distancia == Integer.MAX_VALUE) {
             LoggerSimulacao.log("ERRO", "Distância não encontrada entre " + origem.getNome() + " e " + destino.getNome() + ". Usando tempo padrão.");
-            return 15;
+            return 15.0;
+        }
+        if (distancia == 0) {
+            if (LoggerSimulacao.getModoLog() == LoggerSimulacao.ModoLog.DEBUG) {
+                LoggerSimulacao.log("INFO", "Viagem com origem e destino iguais, caminhão não se desloca ");
+            } return 0;
         }
         // Determina a velocidade média com base no horário
         int minutosNoDia = Simulador.getTempoSimulado() % TEMPO_MINUTOS_POR_DIA;
         boolean isPico = isHorarioDePico(minutosNoDia);
         double velocidadeMedia = isPico ? VELOCIDADE_MEDIA_PICO : VELOCIDADE_MEDIA_NORMAL;
-        // Calcula o tempo base em minutos (distância / velocidade * 60)
+        // Calcula o tempo base em minutos
         double tempoBase = (distancia / velocidadeMedia) * 60;
-        // Adiciona a variação da zona (pico ou normal) diretamente em minutos
+        // Adiciona variação limitada por zona
         int variacao = isPico ? (origem.getVariacaoPico() + destino.getVariacaoPico()) :
                 (origem.getVariacaoNormal() + destino.getVariacaoNormal());
-        double tempoAjustado = tempoBase + variacao;
+        return Math.max(0, tempoBase + Math.min(variacao, 10)); // Limita variação a +10 minutos
+    }
+
+    public static int calcularTempoViagem(ZonaUrbana origem, ZonaUrbana destino) {
+        double tempoAjustado = calcularTempoViagemBase(origem, destino);
         // Adiciona pequena aleatoriedade (+/- 10%)
         Random random = new Random();
         double fatorAleatorio = 1.0 + (random.nextDouble() * 2 * MARGEM_ALEATORIA - MARGEM_ALEATORIA);
         int tempoFinal = (int) Math.max(1, Math.round(tempoAjustado * fatorAleatorio));
         // Loga detalhes em modo DEBUG
-        if (LoggerSimulacao.ModoLog.DEBUG == LoggerSimulacao.getModoLog()) {
-            LoggerSimulacao.log("INFO", String.format("Tempo de viagem de %s para %s: distância=%dkm, velocidade=%.1fkm/h, variação=%dmin, aleatoriedade=%.2f, tempo=%dmin",
-                    origem.getNome(), destino.getNome(), distancia, velocidadeMedia, variacao, fatorAleatorio, tempoFinal));
+        if (LoggerSimulacao.ModoLog.DEBUG == LoggerSimulacao.getModoLog() && origem != null && destino != null) {
+            if (tempoAjustado == 0){
+                tempoFinal = 0;
+            }
+            int distancia = ZonaUrbana.getDistancia(origem.getNome(), destino.getNome());
+            boolean isPico = isHorarioDePico(Simulador.getTempoSimulado() % TEMPO_MINUTOS_POR_DIA);
+            double velocidadeMedia = isPico ? VELOCIDADE_MEDIA_PICO : VELOCIDADE_MEDIA_NORMAL;
+            int variacao = isPico ? (origem.getVariacaoPico() + destino.getVariacaoPico())
+                    : (origem.getVariacaoNormal() + destino.getVariacaoNormal());
+            LoggerSimulacao.log("VIAGEM", String.format(
+                    "Tempo de viagem de %s para %s: distância=%dkm, velocidade=%.1fkm/h, variação=%dmin, aleatoriedade=%.2f, tempo=%dmin",
+                    origem.getNome(), destino.getNome(), distancia, velocidadeMedia, variacao, fatorAleatorio, tempoFinal
+            ));
         }
         return tempoFinal;
     }
@@ -129,8 +153,8 @@ public class DistribuicaoCaminhoes {
                 double pontuacao = calcularPontuacao(zona, zonaAtual);
                 // Logando detalhes de pontuação apenas no modo DEBUG
                 if (LoggerSimulacao.ModoLog.DEBUG == LoggerSimulacao.getModoLog()) {
-                    LoggerSimulacao.log("INFO", String.format("Zona %s: lixo=%dkg, distância=%dkm, pontuação=%.1f",
-                            zona.getNome(), zona.getLixoAcumulado(), ZonaUrbana.getDistancia(zona.getNome(), zonaAtual.getNome()), pontuacao));
+                    LoggerSimulacao.log("INFO", String.format("Zona %s: lixo=%dkg, tempo estimado=%dmin, pontuação=%.1f",
+                            zona.getNome(), zona.getLixoAcumulado(), (int) calcularTempoViagemBase(zonaAtual, zona), pontuacao));
                 }
                 if (pontuacao > melhorPontuacao) {
                     melhorPontuacao = pontuacao;
@@ -152,18 +176,26 @@ public class DistribuicaoCaminhoes {
         return melhorZona;
     }
 
+    // Verifica se a zona é válida para alocação de caminhão
     private boolean isZonaValida(ZonaUrbana zona, ZonaUrbana zonaAtual) {
         int lixo = zona.getLixoAcumulado();
-        int distancia = ZonaUrbana.getDistancia(zona.getNome(), zonaAtual.getNome());
-        boolean valida = lixo > 0 && distancia <= DISTANCIA_MAXIMA;
-        return valida;
+        int caminhoesAtivos = zona.getCaminhoesAtivos();
+        // Rejeita zonas sem lixo ou com excesso de caminhões
+        return lixo > 0 && caminhoesAtivos < limiteCaminhoesPorZona;
     }
 
+    // Calcula a pontuação de uma zona para decidir a alocação de caminhões
     private double calcularPontuacao(ZonaUrbana zona, ZonaUrbana zonaAtual) {
         int lixo = zona.getLixoAcumulado();
-        int distancia = ZonaUrbana.getDistancia(zona.getNome(), zonaAtual.getNome());
+        double tempoViagem = calcularTempoViagemBase(zonaAtual, zona);
         int caminhoesAtivos = zona.getCaminhoesAtivos();
-        double pontuacao = lixo * 0.8 - distancia * 15;
+        // Obtém proporção de lixo restante
+        ZonaEstatistica zonaEstatistica = Simulador.getEstatisticas().buscarZonaEstatistica(zona.getNome());
+        double proporcaoRestante = (zonaEstatistica != null && zonaEstatistica.getLixoGerado() > 0) ?
+                (double) lixo / zonaEstatistica.getLixoGerado() : 1.0;
+        // Fórmula ajustada: prioriza lixo acumulado e proporção, penaliza tempo de viagem
+        double pontuacao = (lixo * 1.0) + (proporcaoRestante * 5000) - (tempoViagem * 50);
+        // Penalidade por excesso de caminhões na zona
         if (caminhoesAtivos > limiteCaminhoesPorZona) {
             double penalidadeCaminhoes = (caminhoesAtivos - limiteCaminhoesPorZona) * 200;
             pontuacao -= penalidadeCaminhoes;

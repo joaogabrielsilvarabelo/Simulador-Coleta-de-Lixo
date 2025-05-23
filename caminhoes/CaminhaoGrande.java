@@ -106,6 +106,7 @@ public class CaminhaoGrande {
     public int getToleranciaEspera() { return toleranciaEspera; }
     public int getEstado() { return status; }
     public EstacaoTransferencia getEstacaoOrigem() { return estacaoOrigem; }
+    public EstacaoTransferencia getEstacaoDestino(){ return estacaoDestino; }
 }
 
 

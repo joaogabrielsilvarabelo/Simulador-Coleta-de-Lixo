@@ -97,76 +97,59 @@ public class Estatisticas {
         // Cabeçalho
         LoggerSimulacao.logRelatorio("CIANO_CLARO", String.format("=====  RELATÓRIO DA SIMULAÇÃO - %s ===== ", tempoFormatado));
         LoggerSimulacao.logRelatorio("BRANCO", "");
-
+        // Resumo geral
+        LoggerSimulacao.logRelatorio("AMARELO", "[RESUMO GERAL]");
+        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-25s %d toneladas", "Lixo total gerado:", totalLixoGerado / 1000));
+        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-25s %d toneladas", "Lixo total coletado:", totalLixoColetado / 1000));
+        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-25s %d toneladas", "Lixo enviado ao aterro:", totalLixoAterro / 1000));
+        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-25s %d minutos", "Tempo simulado:", tempoSimulado));
+        LoggerSimulacao.logRelatorio("BRANCO", "");
         // Coleta por zona
         LoggerSimulacao.logRelatorio("VERDE", "[LIXO COLETADO POR ZONA]");
         for (int i = 0; i < lixoPorZona.getTamanho(); i++) {
             ZonaEstatistica zona = lixoPorZona.obter(i);
             int toneladas = zona.getLixoColetado() / 1000;
             String grafico = gerarBarra(toneladas);
-            LoggerSimulacao.logRelatorio("BRANCO", String.format("%-8s: %s%d toneladas%s %s%s%s", zona.getNomeZona(), LoggerSimulacao.CIANO, toneladas, LoggerSimulacao.RESET, LoggerSimulacao.VERDE, grafico, LoggerSimulacao.RESET));
+            // Use %02d to ensure two digits with leading zero, and adjust spacing
+            LoggerSimulacao.logRelatorio("BRANCO", String.format("%-7s: %02d toneladas%s %s%s%s",
+                    zona.getNomeZona(), toneladas,
+                    LoggerSimulacao.RESET, LoggerSimulacao.VERDE, grafico, LoggerSimulacao.RESET));
         }
-
         LoggerSimulacao.logRelatorio("BRANCO", "");
-
-        // Resumo geral
-        LoggerSimulacao.logRelatorio("AMARELO", "[RESUMO GERAL]");
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("Lixo total gerado     : %d toneladas", totalLixoGerado / 1000));
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("Lixo total coletado   : %d toneladas", totalLixoColetado / 1000));
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("Lixo enviado ao aterro: %d toneladas", totalLixoAterro / 1000));
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("Tempo simulado        : %d minutos", tempoSimulado));
-        LoggerSimulacao.logRelatorio("BRANCO", "");
-
-        // Caminhões grandes
+        // Caminhões Grandes
         LoggerSimulacao.logRelatorio("MAGENTA", "[USO DE CAMINHÕES GRANDES]");
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("Total utilizados                 : %d", totalCaminhoesGrandesUsados));
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("Máximo simultâneo em uso         : %d", maxCaminhoesGrandesEmUso));
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("Número mínimo necessário (estimado): %d", maxCaminhoesGrandesEmUso));
+        LoggerSimulacao.logRelatorio("BRANCO", String.format("Número mínimo de caminhões necessário: %d", totalCaminhoesGrandesUsados));
         LoggerSimulacao.logRelatorio("BRANCO", "");
-
         // Tempo de espera
         LoggerSimulacao.logRelatorio("CIANO", "[DESEMPENHO NAS ESTAÇÕES]");
         double mediaEspera = descarregamentos > 0 ? (double) tempoTotalEsperaPequenos / descarregamentos : 0.0;
         LoggerSimulacao.logRelatorio("BRANCO", String.format("Tempo médio de espera na fila: %.1f min", mediaEspera));
         LoggerSimulacao.logRelatorio("BRANCO", "");
-
-        // Caminhões pequenos
+        // Caminhões Pequenos
         LoggerSimulacao.logRelatorio("AMARELO", "[STATUS DOS CAMINHÕES PEQUENOS]");
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-4s %-8s %-10s %-12s %-35s %s", "Placa", "Zona", "Carga", "Status", "Atividade", "Viagens"));
-
+        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-8s  |  %-6s  |  %-10s  |  %-15s  |  %-8s",
+                "Placa", "Zona", "Carga", "Status", "Viagens"));
         var caminhoesPequenos = Simulador.getCaminhoesPequenos();
         for (int i = 0; i < caminhoesPequenos.getTamanho(); i++) {
             var c = caminhoesPequenos.obter(i);
             String status = c.determinarEstado(c.getEstado());
-            String atividade = switch (c.getEstado()) {
-                case 2 -> "Coletando";
-                case 3 -> "Em trânsito";
-                case 4 -> "Na fila da estação";
-                case 5 -> "Descarregando";
-                case 6 -> "Encerrado";
-                default -> "Disponível";
-            };
-
             String corStatus = switch (c.getEstado()) {
                 case 1 -> "VERDE";
                 case 2, 3, 4, 5 -> "AZUL";
                 case 6 -> "CINZA";
                 default -> "VERMELHO";
             };
-
-            String linha = String.format("%-8s %-8s %d ton /%d ton %-12s %-35s %d",
+            String linha = String.format("%-8s |  %-6s |  %2d ton /%-3d ton |  %-15s |  %-8d",
                     c.getPlaca(), c.getZonaAtual().getNome(),
                     c.getCargaAtual() / 1000, c.getCapacidade() / 1000,
-                    status, atividade, c.getViagensFeitas());
+                    status, c.getViagensFeitas());
             LoggerSimulacao.logRelatorio(corStatus, linha);
         }
-
         LoggerSimulacao.logRelatorio("BRANCO", "");
-
         // Caminhões grandes
         LoggerSimulacao.logRelatorio("MAGENTA", "[STATUS DOS CAMINHÕES GRANDES]");
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-6s %-12s %-10s %-20s", "Placa", "Status", "Carga", "Estação Origem"));
-
+        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-8s  |  %-15s  |  %-10s  |  %-15s",
+                "Placa", "Status", "Carga", "Estação Origem"));
         var caminhoesGrandes = Simulador.getCaminhoesGrandes();
         for (int i = 0; i < caminhoesGrandes.getTamanho(); i++) {
             var c = caminhoesGrandes.obter(i);
@@ -182,16 +165,15 @@ public class Estatisticas {
                 case 1, 2, 3 -> "AZUL";
                 default -> "VERMELHO";
             };
-            String linha = String.format("%-6s %-12s %5d ton /%-5d ton %-20s",
+            String linha = String.format("%-8s |  %-15s |  %3d ton /%-3dton |  %-15s",
                     c.getPlaca(), estado, c.getCargaAtual() / 1000, c.getCapacidade() / 1000,
                     c.getEstacaoOrigem() != null ? c.getEstacaoOrigem().getNome() : "-");
             LoggerSimulacao.logRelatorio(cor, linha);
         }
-        LoggerSimulacao.logRelatorio("BRANCO", "");
-
         // Fechamento
         LoggerSimulacao.logRelatorio("CIANO_CLARO", "==================================================");
     }
+
 
     private String gerarBarra(int toneladas) {
         int blocos = Math.min(toneladas / 5, 20);
@@ -212,80 +194,57 @@ public class Estatisticas {
         return null;
     }
 
-    public int getTotalLixoColetado() {
-        return totalLixoColetado;
-    }
-
-    public int getTotalLixoAterro() {
-        return totalLixoAterro;
-    }
-
     public void salvarRelatorio(String arquivo) throws IOException {
         try (PrintWriter writer = new PrintWriter(new File(arquivo))) {
             String tempoFormatado = LoggerSimulacao.formatarTempo(tempoSimulado);
-
             // Cabeçalho
             writer.println(String.format("=====  RELATÓRIO DA SIMULAÇÃO - %s ===== ", tempoFormatado));
             writer.println();
-
+            // Resumo geral
+            writer.println("[RESUMO GERAL]");
+            writer.println(String.format("%-25s %d toneladas", "Lixo total gerado:", totalLixoGerado / 1000));
+            writer.println(String.format("%-25s %d toneladas", "Lixo total coletado:", totalLixoColetado / 1000));
+            writer.println(String.format("%-25s %d toneladas", "Lixo enviado ao aterro:", totalLixoAterro / 1000));
+            writer.println(String.format("%-25s %d minutos", "Tempo simulado:", tempoSimulado));
+            writer.println();
             // Coleta por zona
             writer.println("[LIXO COLETADO POR ZONA]");
             for (int i = 0; i < lixoPorZona.getTamanho(); i++) {
                 ZonaEstatistica zona = lixoPorZona.obter(i);
                 int toneladas = zona.getLixoColetado() / 1000;
                 String grafico = gerarBarra(toneladas);
-                writer.println(String.format("%-8s: %d toneladas %s", zona.getNomeZona(), toneladas, grafico));
+                //Use %02d para garantir dois dígitos com zero à esquerda e ajuste o espaçamento
+                writer.println(String.format("%-7s: %02d toneladas %s",
+                        zona.getNomeZona(), toneladas, grafico));
             }
-
             writer.println();
-
-            // Resumo geral
-            writer.println("[RESUMO GERAL]");
-            writer.println(String.format("Lixo total gerado     : %d toneladas", totalLixoGerado / 1000));
-            writer.println(String.format("Lixo total coletado   : %d toneladas", totalLixoColetado / 1000));
-            writer.println(String.format("Lixo enviado ao aterro: %d toneladas", totalLixoAterro / 1000));
-            writer.println(String.format("Tempo simulado        : %d minutos", tempoSimulado));
-            writer.println();
-
-            // Caminhões grandes
+            // Número mínimo de caminhões grandes
             writer.println("[USO DE CAMINHÕES GRANDES]");
-            writer.println(String.format("Total utilizados                 : %d", totalCaminhoesGrandesUsados));
-            writer.println(String.format("Máximo simultâneo em uso         : %d", maxCaminhoesGrandesEmUso));
-            writer.println(String.format("Número mínimo necessário (estimado): %d", maxCaminhoesGrandesEmUso));
+            writer.println(String.format("Número mínimo de caminhões necessário: %d", totalCaminhoesGrandesUsados));
             writer.println();
-
             // Tempo de espera
             writer.println("[DESEMPENHO NAS ESTAÇÕES]");
             double mediaEspera = descarregamentos > 0 ? (double) tempoTotalEsperaPequenos / descarregamentos : 0.0;
             writer.println(String.format("Tempo médio de espera na fila: %.1f min", mediaEspera));
             writer.println();
-
-            // Caminhões pequenos
+            // Caminhões Pequenos
             writer.println("[STATUS DOS CAMINHÕES PEQUENOS]");
-            writer.println(String.format("%-4s %-8s %-10s %-12s %-35s %s", "Placa", "Zona", "Carga", "Status", "Atividade", "Viagens"));
+            writer.println(String.format("%-8s  |  %-6s  |  %-10s  |  %-15s  |  %-8s",
+                    "Placa", "Zona", "Carga", "Status", "Viagens"));
             var caminhoesPequenos = Simulador.getCaminhoesPequenos();
             for (int i = 0; i < caminhoesPequenos.getTamanho(); i++) {
                 var c = caminhoesPequenos.obter(i);
                 String status = c.determinarEstado(c.getEstado());
-                String atividade = switch (c.getEstado()) {
-                    case 2 -> "Coletando";
-                    case 3 -> "Em trânsito";
-                    case 4 -> "Na fila da estação";
-                    case 5 -> "Descarregando";
-                    case 6 -> "Encerrado";
-                    default -> "Disponível";
-                };
-                writer.println(String.format("%-8s %-8s %d ton /%-8d ton %-12s %-35s %d",
+                writer.println(String.format("%-8s |  %-6s |  %2dton /%-3dton |  %-15s |  %-8d",
                         c.getPlaca(), c.getZonaAtual().getNome(),
                         c.getCargaAtual() / 1000, c.getCapacidade() / 1000,
-                        status, atividade, c.getViagensFeitas()));
+                        status, c.getViagensFeitas()));
             }
-
             writer.println();
-
-            // Caminhões grandes
+            // Caminhões Grandes
             writer.println("[STATUS DOS CAMINHÕES GRANDES]");
-            writer.println(String.format("%-6s %-12s %-10s %-20s", "Placa", "Status", "Carga", "Estação Origem"));
+            writer.println(String.format("%-8s  |  %-15s  |  %-10s  |  %-15s",
+                    "Placa", "Status", "Carga", "Estação Origem"));
             var caminhoesGrandes = Simulador.getCaminhoesGrandes();
             for (int i = 0; i < caminhoesGrandes.getTamanho(); i++) {
                 var c = caminhoesGrandes.obter(i);
@@ -296,17 +255,18 @@ public class Estatisticas {
                     case 3 -> "RETORNANDO";
                     default -> "DESCONHECIDO";
                 };
-                writer.println(String.format("%-6s %-12s %5d /%-5d %-20s",
-                        c.getPlaca(), estado, c.getCargaAtual(), c.getCapacidade(),
+                writer.println(String.format("%-8s |  %-15s |  %3dton /%-3dton |  %-15s",
+                        c.getPlaca(), estado, c.getCargaAtual() / 1000, c.getCapacidade() / 1000,
                         c.getEstacaoOrigem() != null ? c.getEstacaoOrigem().getNome() : "-"));
             }
-
             writer.println();
-
             // Fechamento
-            writer.println("====================================================================");
+            writer.println("==================================================");
         }
     }
+    public int getTotalLixoColetado() { return totalLixoColetado; }
+    public int getTotalLixoAterro() { return totalLixoAterro; }
+    public Lista<ZonaEstatistica> getLixoPorZona(){ return lixoPorZona; }
 }
 
 

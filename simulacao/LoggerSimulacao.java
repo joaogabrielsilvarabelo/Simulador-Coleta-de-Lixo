@@ -5,8 +5,6 @@ import estruturas.MapaEventos;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Objects;
-
 
 // Classe para gerenciar logs do sistema com formatação colorida e saída para arquivo
 public class LoggerSimulacao {
@@ -111,7 +109,7 @@ public class LoggerSimulacao {
             String timestamp = formatarTempo(Simulador.getTempoSimulado());
             String mensagemFormatada = String.format("%s[%s] %s%s", cor, timestamp, mensagem, RESET);
             String mensagemArquivo = String.format("[%s] %s", timestamp, mensagem);
-            if (Objects.equals(tipoEvento, "CONFIG") || Objects.equals(tipoEvento, "ESTATISTICA")){
+            if (tipoEvento == "CONFIG" || tipoEvento == "ESTATISTICA"){
                 mensagemFormatada = String.format("%s %s%s", cor, mensagem, RESET);
                 mensagemArquivo = mensagem;
             }

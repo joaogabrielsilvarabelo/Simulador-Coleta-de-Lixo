@@ -13,15 +13,7 @@ public class ResultadoProcessamentoFila {
         this.foiProcessado = foiProcessado;
     }
 
-    public CaminhaoPequeno getCaminhaoProcessado() {
-        return caminhaoProcessado;
-    }
-
-    public int getTempoDeEspera() {
-        return tempoDeEspera;
-    }
-
-    public boolean foiProcessado() {
-        return foiProcessado;
-    }
+    public CaminhaoPequeno getCaminhaoProcessado() { return caminhaoProcessado; }
+    public int getTempoDeEspera() { return tempoDeEspera; }
+    public boolean foiProcessado() { return foiProcessado; }
 }

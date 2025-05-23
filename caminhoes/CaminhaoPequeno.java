@@ -13,16 +13,19 @@ public class CaminhaoPequeno {
     public int viagensFeitas;
     private int status;
     private ZonaUrbana zonaAtual;
+    public ZonaUrbana zonaDestino;
     private final ZonaUrbana zonaInicial;
     private EstacaoTransferencia estacaoDestino;
     private int tempoViagemRestante;
-    private ZonaUrbana zonaDestino;
     private static final int[] OPCOES = {2000, 4000, 8000, 10000};
     private static final int TEMPO_COLETA_POR_KG = 10; // X minutos por 1000kg, ajustável
     private int tempoColetaRestante;
     private int tempoEsperaFila;
     private int quantidadeColetando; // Quantidade total a ser coletada
     private int cargaPorMinuto; // Carga a ser adicionada por minuto durante a coleta
+    private int tempoDescarregamentoRestante; // Tempo restante para descarregamento
+    private int quantidadeDescarregando; // Quantidade total a ser descarregada
+    private int descargaPorMinuto; // Carga a ser descarregada por minuto
 
     public CaminhaoPequeno(int escolha, int limiteViagens, ZonaUrbana zonaInicial, String placaOpcional) {
         this.cargaAtual = 0;
@@ -38,6 +41,9 @@ public class CaminhaoPequeno {
         this.tempoEsperaFila = 0;
         this.quantidadeColetando = 0;
         this.cargaPorMinuto = 0;
+        this.tempoDescarregamentoRestante = 0;
+        this.quantidadeDescarregando = 0;
+        this.descargaPorMinuto = 0;
     }
 
     public CaminhaoPequeno(int escolha, int limiteViagens, ZonaUrbana zonaInicial) {
@@ -71,7 +77,8 @@ public class CaminhaoPequeno {
             // Calcula carga por minuto (distribui a carga ao longo do tempo de coleta)
             cargaPorMinuto = (int) Math.ceil((double) coletado / tempoColetaRestante);
             setEstado(2); // COLETANDO
-            LoggerSimulacao.log("COLETA", "Caminhão " + id + " iniciou coleta de " + coletado + "kg em " + zonaAtual.getNome() +", tempo estimado: " + tempoColetaRestante + "min, carga por minuto: " + cargaPorMinuto + "kg.");
+            LoggerSimulacao.log("COLETA", "Caminhão " + id + " iniciou coleta de " + coletado + "kg em " + zonaAtual.getNome() +
+                    ", tempo estimado: " + tempoColetaRestante + "min, carga por minuto: " + cargaPorMinuto + "kg.");
         } else {
             LoggerSimulacao.log("INFO", "Caminhão " + id + " não coletou (sem lixo suficiente ou cheio).");
         }
@@ -116,6 +123,51 @@ public class CaminhaoPequeno {
         return true;
     }
 
+    // Inicia descarregamento, definindo quantidade e tempo
+    public void iniciarDescarregamento(int quantidade, int tempoPor1000kg) {
+        if (getEstado() == 6) {
+            LoggerSimulacao.log("ERRO", "Caminhão " + id + " está ENCERRADO e não pode descarregar.");
+            return;
+        }
+        if (quantidade > cargaAtual) {
+            LoggerSimulacao.log("ERRO", "Quantidade a descarregar (" + quantidade + "kg) excede carga atual (" + cargaAtual + "kg).");
+            return;
+        }
+        quantidadeDescarregando = quantidade;
+        tempoDescarregamentoRestante = (int) Math.ceil(quantidade / 1000.0 * tempoPor1000kg);
+        descargaPorMinuto = (int) Math.ceil((double) quantidade / tempoDescarregamentoRestante);
+        LoggerSimulacao.log("INFO", String.format("Caminhão %s iniciou descarregamento de %dkg, tempo estimado: %dmin, descarga por minuto: %dkg.",
+                id, quantidade, tempoDescarregamentoRestante, descargaPorMinuto));
+    }
+
+    // Processa descarregamento incremental, transferindo carga para o caminhão grande
+    public boolean processarDescarregamento(CaminhaoGrande caminhaoGrande) {
+        if (tempoDescarregamentoRestante > 0) {
+            tempoDescarregamentoRestante--;
+            // Calcula carga a ser descarregada neste minuto
+            int cargaDescarregar = Math.min(descargaPorMinuto, quantidadeDescarregando);
+            if (caminhaoGrande != null) {
+                caminhaoGrande.carregar(cargaDescarregar);
+                cargaAtual -= cargaDescarregar;
+                quantidadeDescarregando -= cargaDescarregar;
+            }
+            // Verifica se o descarregamento foi finalizado
+            if (tempoDescarregamentoRestante == 0) {
+                // Descarrega qualquer carga restante devido a arredondamentos
+                if (quantidadeDescarregando > 0 && caminhaoGrande != null) {
+                    caminhaoGrande.carregar(quantidadeDescarregando);
+                    cargaAtual -= quantidadeDescarregando;
+                    quantidadeDescarregando = 0;
+                }
+                descargaPorMinuto = 0;
+                //Limpa a estação destino depois do descarregamento
+                setEstacaoDestino(null);
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
 
     // Verifica se o limite de viagens foi atingido
     public void isLimiteAtingido(int viagensFeitas) {
@@ -187,6 +239,7 @@ public class CaminhaoPequeno {
     public void incrementarTempoEspera() { this.tempoEsperaFila++; }
     public void resetarTempoEspera() { this.tempoEsperaFila = 0; }
     public int getTempoViagemRestante() { return tempoViagemRestante; }
+    public int getTempoDescarregamentoRestante() { return tempoDescarregamentoRestante; }
 }
 
 

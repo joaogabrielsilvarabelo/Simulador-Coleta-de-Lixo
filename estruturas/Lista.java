@@ -59,13 +59,8 @@ public class Lista<T> {
         tamanho = 0;
     }
 
-    public int getTamanho() {
-        return tamanho;
-    }
-
-    public boolean estaVazia() {
-        return tamanho == 0;
-    }
+    public int getTamanho() { return tamanho; }
+    public boolean estaVazia() { return tamanho == 0; }
 }
 
 

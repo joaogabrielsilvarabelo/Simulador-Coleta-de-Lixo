@@ -17,3 +17,4 @@ public class ResultadoProcessamentoFila {
     public int getTempoDeEspera() { return tempoDeEspera; }
     public boolean foiProcessado() { return foiProcessado; }
 }
+

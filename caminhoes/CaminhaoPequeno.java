@@ -124,7 +124,7 @@ public class CaminhaoPequeno {
     }
 
     // Inicia descarregamento, definindo quantidade e tempo
-    public void iniciarDescarregamento(int quantidade, int tempoPor1000kg) {
+    public void iniciarDescarregamento(int quantidade, int tempoPor2000kg) {
         if (getEstado() == 6) {
             LoggerSimulacao.log("ERRO", "Caminhão " + id + " está ENCERRADO e não pode descarregar.");
             return;
@@ -134,10 +134,9 @@ public class CaminhaoPequeno {
             return;
         }
         quantidadeDescarregando = quantidade;
-        tempoDescarregamentoRestante = (int) Math.ceil(quantidade / 1000.0 * tempoPor1000kg);
+        tempoDescarregamentoRestante = (int) Math.ceil(quantidade / 2000.0 * tempoPor2000kg);
         descargaPorMinuto = (int) Math.ceil((double) quantidade / tempoDescarregamentoRestante);
-        LoggerSimulacao.log("INFO", String.format("Caminhão %s iniciou descarregamento de %dkg, tempo estimado: %dmin, descarga por minuto: %dkg.",
-                id, quantidade, tempoDescarregamentoRestante, descargaPorMinuto));
+
     }
 
     // Processa descarregamento incremental, transferindo carga para o caminhão grande
@@ -241,5 +240,7 @@ public class CaminhaoPequeno {
     public int getTempoViagemRestante() { return tempoViagemRestante; }
     public int getTempoDescarregamentoRestante() { return tempoDescarregamentoRestante; }
 }
+
+
 
 

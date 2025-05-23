@@ -9,7 +9,6 @@ import estruturas.Lista;
 import zonas.ZonaUrbana;
 import zonas.ZonaEstatistica;
 
-// Gerencia a simulação de coleta e transporte de lixo
 public class Simulador {
     private static int[][] intervalosLixo;
     private final DistribuicaoCaminhoes distribuicaoCaminhoes;
@@ -371,6 +370,15 @@ public class Simulador {
         }
     }
 
+    // Adiciona um novo caminhão grande a uma estação específica
+    private void adicionarCaminhaoGrande(EstacaoTransferencia estacao) {
+        CaminhaoGrande novoCaminhao = new CaminhaoGrande(toleranciaCaminhoesGrandes);
+        todosCaminhoesGrandes.adicionar(novoCaminhao);
+        estacao.atribuirCaminhaoGrande(novoCaminhao);
+        LoggerSimulacao.log("ATRIBUICAO", String.format("Novo caminhão grande %s adicionado à %s devido a tempo de espera excedido.",
+                novoCaminhao.getPlaca(), estacao.getNome()));
+    }
+
     // Processa ações dos caminhões pequenos (coleta, trânsito)
     private void processarCaminhoesPequenos() {
         inicializarZonaEstatistica();
@@ -396,7 +404,7 @@ public class Simulador {
                     // Coleta concluída, mas caminhão não está cheio
                     int lixoColetado = caminhao.coletar(caminhao.getZonaAtual().getLixoAcumulado());
                     if (lixoColetado == 0 && caminhao.getCargaAtual() == 0) {
-                        //Zona não tem mais lixo para coletar e o caminhão está sem carga
+                        // Zona não tem mais lixo para coletar e o caminhão está sem carga
                         caminhao.setEstado(1); // DISPONÍVEL
                         caminhao.getZonaAtual().decrementarCaminhoesAtivos();
                         LoggerSimulacao.log("INFO", String.format("Caminhão %s em %s não coletou (sem lixo suficiente) e agora está disponível para redistribuição.",
@@ -445,42 +453,45 @@ public class Simulador {
     private void processarCaminhoesEmTransito() {
         for (int i = 0; i < caminhoesPequenos.getTamanho(); i++) {
             CaminhaoPequeno caminhao = caminhoesPequenos.obter(i);
-            if (caminhao.getEstado() == 3) {
-                if (caminhao.processarViagem()) {
-                    EstacaoTransferencia estacao = caminhao.getEstacaoDestino();
-                    if (estacao != null) {
-                        if (caminhao.getCargaAtual() > 0) {
-                            estacao.receberCaminhaoPequeno(caminhao, tempoSimulado);
-                            caminhao.setEstado(4); // FILA_ESTAÇÃO
-                            caminhao.getZonaAtual().decrementarCaminhoesAtivos();
-                            caminhao.setZonaAtual(estacao.getZonaDaEstacao());
-                            caminhao.viagensFeitas++;
-                            LoggerSimulacao.log("CHEGADA", String.format("Caminhão %s chegou à %s e entrou na fila.",
-                                    caminhao.getPlaca(), estacao.getNome()));
-                        }
-                        else {
-                            caminhao.setEstado(2); //COLETANDO
-                            LoggerSimulacao.log("ERRO", String.format("Caminhão %s chegou à %s aparentemente, mas não tem carga, portanto inicia coleta.",
-                                    caminhao.getPlaca(), estacao.getNome()));
-                        }
+            if (caminhao.getEstado() == 3 && caminhao.processarViagem()) {
+                if (caminhao.getZonaDestino() != null) {
+                    // Indo à zona
+                    if (caminhao.getZonaAtual() != caminhao.getZonaDestino()) {
+                        caminhao.getZonaAtual().decrementarCaminhoesAtivos(); // Diminui caminhões ativos na zona origem
+                        caminhao.setZonaAtual(caminhao.getZonaDestino());
+                        caminhao.viagensFeitas++;
                     }
+                    caminhao.setZonaDestino(null);
+                    caminhao.setEstado(2); // COLETANDO
+                    caminhao.getZonaAtual().incrementarCaminhoesAtivos();
+                    LoggerSimulacao.log("CHEGADA", String.format("Caminhão %s chegou à zona %s, iniciando coleta",
+                            caminhao.getPlaca(), caminhao.getZonaAtual().getNome()));
+                } else if (caminhao.getEstacaoDestino() != null) {
+                    // Indo à estação
+                    caminhao.setEstado(4); // FILA_ESTAÇÃO
+                    caminhao.getEstacaoDestino().receberCaminhaoPequeno(caminhao, tempoSimulado);
+                    caminhao.setEstacaoDestino(null);
+                    caminhao.viagensFeitas++;
                 }
             }
         }
     }
 
+    // Processa estações, verificando filas e adicionando caminhões grandes se necessário
     private void processarEstacoes() {
         for (int i = 0; i < estacoes.getTamanho(); i++) {
             EstacaoTransferencia estacao = estacoes.obter(i);
+            // Verifica se o tempo de espera foi excedido e adiciona novo caminhão grande
+            if (estacao.tempoEsperaExcedido()) {
+                adicionarCaminhaoGrande(estacao);
+            }
             // Processa a fila de caminhões pequenos
             ResultadoProcessamentoFila resultado = estacao.processarFila(tempoSimulado);
             if (resultado.foiProcessado()) {
                 estatisticas.registrarEspera(resultado.getTempoDeEspera());
                 CaminhaoPequeno pequeno = resultado.getCaminhaoProcessado();
                 if (pequeno != null) {
-                    pequeno.setEstado(1); // DISPONÍVEL
-                    LoggerSimulacao.log("INFO", String.format("Caminhão %s se tornou disponível após descarregar em %s e pode ser redistribuído.",
-                            pequeno.getPlaca(), estacao.getNome()));
+                    pequeno.setEstado(1); // DISPONÍVEL (redundante, já setado em EstacaoTransferencia)
                     pequeno.setEstacaoDestino(null);
                 }
             }

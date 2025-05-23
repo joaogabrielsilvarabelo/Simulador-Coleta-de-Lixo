@@ -14,7 +14,7 @@ public class CaminhaoGrande {
     private int status; // 0: ESPERANDO, 1: EM_VIAGEM_PARA_ATERRO, 2: DESCARREGANDO, 3: RETORNANDO
     private int tempoViagemRestante; // Tempo restante para viagem ou descarregamento
     private EstacaoTransferencia estacaoOrigem; // Estação à qual o caminhão está associado
-    private EstacaoTransferencia estacaoDestino; // Estação para onde retorna, se redirecionado
+    private EstacaoTransferencia estacaoDestino;// Estação para onde retorna, se redirecionado
 
     public CaminhaoGrande(int toleranciaEspera) {
         this.placa = Placa.gerarPlaca();
@@ -65,6 +65,13 @@ public class CaminhaoGrande {
         LoggerSimulacao.log("DESCARGA", String.format("Caminhão grande %s iniciando descarregamento no aterro", placa));
     }
 
+    // Inicia carregamento da carga do caminhão pequeno
+    public void iniciarCarregamento() {
+        status = 4; // CARREGANDO_LIXO
+        tempoViagemRestante = TEMPO_DESCARREGAMENTO;
+        LoggerSimulacao.log("DESCARGA", String.format("Caminhão grande %s iniciando descarregamento no aterro", placa));
+    }
+
     // Inicia retorno para a estação
     public void iniciarRetorno(int tempoViagem) {
         status = 3; // RETORNANDO
@@ -94,6 +101,10 @@ public class CaminhaoGrande {
                 estacaoDestino.atribuirCaminhaoGrande(this);
                 LoggerSimulacao.log("CHEGADA", String.format("Caminhão grande %s chegou à estação %s", placa, estacaoDestino.getNome()));
                 return true; // Pronto para ser reutilizado
+            }
+            else if (status == 4){
+
+                LoggerSimulacao.log("COLETA", String.format("Caminhão grande %s recebeu %s", placa, estacaoDestino.getNome()));
             }
         }
         return false;

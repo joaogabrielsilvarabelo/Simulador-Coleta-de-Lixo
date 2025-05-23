@@ -114,7 +114,7 @@ public class Estatisticas {
         LoggerSimulacao.logRelatorio("BRANCO", String.format("Lixo total gerado     : %d toneladas", totalLixoGerado / 1000));
         LoggerSimulacao.logRelatorio("BRANCO", String.format("Lixo total coletado   : %d toneladas", totalLixoColetado / 1000));
         LoggerSimulacao.logRelatorio("BRANCO", String.format("Lixo enviado ao aterro: %d toneladas", totalLixoAterro / 1000));
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("Tempo simulado        : %s", formatarTempo(tempoSimulado)));
+        LoggerSimulacao.logRelatorio("BRANCO", String.format("Tempo simulado        : %d minutos", tempoSimulado));
         LoggerSimulacao.logRelatorio("BRANCO", "");
 
         // Caminhões grandes
@@ -125,23 +125,23 @@ public class Estatisticas {
         LoggerSimulacao.logRelatorio("BRANCO", "");
 
         // Tempo de espera
-        LoggerSimulacao.logRelatorio("CINZA", "[DESEMPENHO NAS ESTAÇÕES]");
+        LoggerSimulacao.logRelatorio("CIANO", "[DESEMPENHO NAS ESTAÇÕES]");
         double mediaEspera = descarregamentos > 0 ? (double) tempoTotalEsperaPequenos / descarregamentos : 0.0;
         LoggerSimulacao.logRelatorio("BRANCO", String.format("Tempo médio de espera na fila: %.1f min", mediaEspera));
         LoggerSimulacao.logRelatorio("BRANCO", "");
 
         // Caminhões pequenos
         LoggerSimulacao.logRelatorio("AMARELO", "[STATUS DOS CAMINHÕES PEQUENOS]");
-        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-4s %-8s %-10s %-12s %-35s %s", "ID", "Zona", "Carga", "Status", "Atividade", "Viagens"));
+        LoggerSimulacao.logRelatorio("BRANCO", String.format("%-4s %-8s %-10s %-12s %-35s %s", "Placa", "Zona", "Carga", "Status", "Atividade", "Viagens"));
 
         var caminhoesPequenos = Simulador.getCaminhoesPequenos();
         for (int i = 0; i < caminhoesPequenos.getTamanho(); i++) {
             var c = caminhoesPequenos.obter(i);
             String status = c.determinarEstado(c.getEstado());
             String atividade = switch (c.getEstado()) {
-                case 2 -> "Coletando (" + (c.getCargaAtual() / 1000) + " ton)";
-                case 3 -> "Indo para estação";
-                case 4 -> "Aguardando descarga";
+                case 2 -> "Coletando";
+                case 3 -> "Em trânsito";
+                case 4 -> "Na fila da estação";
                 case 5 -> "Descarregando";
                 case 6 -> "Encerrado";
                 default -> "Disponível";
@@ -154,7 +154,7 @@ public class Estatisticas {
                 default -> "VERMELHO";
             };
 
-            String linha = String.format("%-8s %-8s %d /%-8d %-12s %-35s %d",
+            String linha = String.format("%-8s %-8s %d ton /%d ton %-12s %-35s %d",
                     c.getPlaca(), c.getZonaAtual().getNome(),
                     c.getCargaAtual() / 1000, c.getCapacidade() / 1000,
                     status, atividade, c.getViagensFeitas());
@@ -180,10 +180,10 @@ public class Estatisticas {
             String cor = switch (c.getEstado()) {
                 case 0 -> "VERDE";
                 case 1, 2, 3 -> "AZUL";
-                default -> "BRANCO";
+                default -> "VERMELHO";
             };
-            String linha = String.format("%-6s %-12s %5d /%-5d %-20s",
-                    c.getPlaca(), estado, c.getCargaAtual(), c.getCapacidade(),
+            String linha = String.format("%-6s %-12s %5d ton /%-5d ton %-20s",
+                    c.getPlaca(), estado, c.getCargaAtual() / 1000, c.getCapacidade() / 1000,
                     c.getEstacaoOrigem() != null ? c.getEstacaoOrigem().getNome() : "-");
             LoggerSimulacao.logRelatorio(cor, linha);
         }
@@ -191,10 +191,6 @@ public class Estatisticas {
 
         // Fechamento
         LoggerSimulacao.logRelatorio("CIANO_CLARO", "==================================================");
-    }
-
-    private String formatarTempo(int minutos) {
-        return LoggerSimulacao.formatarTempo(minutos);
     }
 
     private String gerarBarra(int toneladas) {
@@ -248,7 +244,7 @@ public class Estatisticas {
             writer.println(String.format("Lixo total gerado     : %d toneladas", totalLixoGerado / 1000));
             writer.println(String.format("Lixo total coletado   : %d toneladas", totalLixoColetado / 1000));
             writer.println(String.format("Lixo enviado ao aterro: %d toneladas", totalLixoAterro / 1000));
-            writer.println(String.format("Tempo simulado        : %s", formatarTempo(tempoSimulado)));
+            writer.println(String.format("Tempo simulado        : %d minutos", tempoSimulado));
             writer.println();
 
             // Caminhões grandes
@@ -266,20 +262,20 @@ public class Estatisticas {
 
             // Caminhões pequenos
             writer.println("[STATUS DOS CAMINHÕES PEQUENOS]");
-            writer.println(String.format("%-4s %-8s %-10s %-12s %-35s %s", "ID", "Zona", "Carga", "Status", "Atividade", "Viagens"));
+            writer.println(String.format("%-4s %-8s %-10s %-12s %-35s %s", "Placa", "Zona", "Carga", "Status", "Atividade", "Viagens"));
             var caminhoesPequenos = Simulador.getCaminhoesPequenos();
             for (int i = 0; i < caminhoesPequenos.getTamanho(); i++) {
                 var c = caminhoesPequenos.obter(i);
                 String status = c.determinarEstado(c.getEstado());
                 String atividade = switch (c.getEstado()) {
-                    case 2 -> "Coletando (" + (c.getCargaAtual() / 1000) + " ton)";
-                    case 3 -> "Indo para estação";
-                    case 4 -> "Aguardando descarga";
+                    case 2 -> "Coletando";
+                    case 3 -> "Em trânsito";
+                    case 4 -> "Na fila da estação";
                     case 5 -> "Descarregando";
                     case 6 -> "Encerrado";
                     default -> "Disponível";
                 };
-                writer.println(String.format("%-8s %-8s %d /%-8d %-12s %-35s %d",
+                writer.println(String.format("%-8s %-8s %d ton /%-8d ton %-12s %-35s %d",
                         c.getPlaca(), c.getZonaAtual().getNome(),
                         c.getCargaAtual() / 1000, c.getCapacidade() / 1000,
                         status, atividade, c.getViagensFeitas()));

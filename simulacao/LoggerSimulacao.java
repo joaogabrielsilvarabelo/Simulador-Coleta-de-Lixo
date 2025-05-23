@@ -84,13 +84,13 @@ public class LoggerSimulacao {
     }
 
     // Registro especial para o relatório horário
-    public static void logRelatorio(String tipoEvento, String mensagem) {
+    public static void logRelatorio(String cor, String mensagem) {
         synchronized (System.out) {
-            String cor = CORES_RELATORIO.get(tipoEvento);
-            if (cor == null) {
-                cor = RESET;
+            String cor_lista = CORES_RELATORIO.get(cor);
+            if (cor_lista == null) {
+                cor_lista = RESET;
             }
-            String mensagemFormatada = String.format("%s %s%s", cor, mensagem, RESET);
+            String mensagemFormatada = String.format("%s %s%s", cor_lista, mensagem, RESET);
             System.out.println(mensagemFormatada);
         }
         if (escritorArquivoLog != null) {

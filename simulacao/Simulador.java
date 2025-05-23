@@ -378,7 +378,7 @@ public class Simulador {
                 // Caminhão retornou à estação, remove da lista
                 caminhoesGrandesOcupados.remover(i);
                 caminhoesGrandesDisponiveis.adicionar(caminhao);
-                LoggerSimulacao.log("INFO", String.format("Caminhão grande %s disponível novamente após retorno", caminhao.getPlaca()));
+                LoggerSimulacao.log("INFO", String.format("Caminhão grande %s disponível", caminhao.getPlaca()));
             }
         }
     }
@@ -532,13 +532,13 @@ public class Simulador {
                     caminhao.setZonaDestino(null);
                     caminhao.setEstado(2); // COLETANDO
                     caminhao.getZonaAtual().incrementarCaminhoesAtivos();
-                    LoggerSimulacao.log("CHEGADA", String.format("Caminhão %s chegou à zona %s, iniciando coleta",
+                    LoggerSimulacao.log("CHEGADA", String.format("Caminhão %s chegou à zona %s.",
                             caminhao.getPlaca(), caminhao.getZonaAtual().getNome()));
                 } else if (caminhao.getEstacaoDestino() != null) {
                     // Indo à estação
                     caminhao.setEstado(4); // FILA_ESTAÇÃO
                     caminhao.getEstacaoDestino().receberCaminhaoPequeno(caminhao, tempoSimulado);
-                    LoggerSimulacao.log("CHEGADA", String.format("Caminhão %s chegou à %s, entrou na fila",
+                    LoggerSimulacao.log("CHEGADA", String.format("Caminhão %s chegou à %s, entrou na fila.",
                             caminhao.getPlaca(), caminhao.getEstacaoDestino().getNome()));
                 }
             }
@@ -548,7 +548,7 @@ public class Simulador {
     private void logTentativasSemColeta(ZonaStats[] zonaStats) {
         for (int i = 0; i < zonas.getTamanho(); i++) {
             if (zonaStats[i].semColeta > 0 && zonas.obter(i).getLixoAcumulado() == 0) {
-                LoggerSimulacao.log("INFO", String.format("%d caminhão(ões) não conseguiu(ram) coletar em %s (sem lixo disponível)",
+                LoggerSimulacao.log("INFO", String.format("%d caminhão(ões) não conseguiu(ram) coletar em %s (sem lixo disponível).",
                         zonaStats[i].semColeta, zonas.obter(i).getNome()));
                 zonaStats[i].semColeta = 0;
             }

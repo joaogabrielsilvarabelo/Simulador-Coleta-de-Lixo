@@ -1,10 +1,12 @@
 package simulacao;
 
+import caminhoes.DistribuicaoCaminhoes;
 import estruturas.MapaEventos;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Objects;
 
 // Classe para gerenciar logs do sistema com formatação colorida e saída para arquivo
 public class LoggerSimulacao {
@@ -26,29 +28,35 @@ public class LoggerSimulacao {
     public static final String CIANO_CLARO = "\u001B[96m";
     public static final String CINZA = "\u001B[90m";
     protected static final String AMARELO_CLARO = "\u001B[93m";
+    public static final String VERDE_CLARO = "\u001B[92m";
+    public static final String MAGENTA_CLARO = "\u001B[95m";
+    public static final String AZUL_CLARO = "\u001B[94m";
 
     private static final MapaEventos CORES_EVENTO = new MapaEventos();
     static {
         CORES_EVENTO.put("COLETA", VERDE);
-        CORES_EVENTO.put("CHEGADA", CIANO);
+        CORES_EVENTO.put("CHEGADA", AZUL_CLARO);
         CORES_EVENTO.put("DESCARGA", CIANO_CLARO);
         CORES_EVENTO.put("ERRO", VERMELHO);
         CORES_EVENTO.put("INFO", AMARELO_CLARO);
         CORES_EVENTO.put("CONFIG", RESET);
         CORES_EVENTO.put("ESTATISTICA", RESET);
         CORES_EVENTO.put("VIAGEM", AZUL);
-        CORES_EVENTO.put("ATRIBUICAO", MAGENTA);
+        CORES_EVENTO.put("ATRIBUICAO", MAGENTA_CLARO);
+        CORES_EVENTO.put("ADIÇÃO", VERDE_CLARO);
     }
 
     private static final MapaEventos CORES_RELATORIO = new MapaEventos();
     static {
         CORES_RELATORIO.put("VERDE", VERDE);
+        CORES_RELATORIO.put("VERDE_CLARO", VERDE_CLARO);
         CORES_RELATORIO.put("CIANO", CIANO);
         CORES_RELATORIO.put("AZUL", AZUL);
+        CORES_RELATORIO.put("AZUL_CLARO", AZUL_CLARO);
         CORES_RELATORIO.put("VERMELHO", VERMELHO);
         CORES_RELATORIO.put("AMARELO", AMARELO_CLARO);
         CORES_RELATORIO.put("BRANCO", RESET);
-        CORES_RELATORIO.put("MAGENTA", MAGENTA);
+        CORES_RELATORIO.put("MAGENTA", MAGENTA_CLARO);
         CORES_RELATORIO.put("CINZA", CINZA);
         CORES_RELATORIO.put("CIANO_CLARO", CIANO_CLARO);
     }
@@ -82,18 +90,20 @@ public class LoggerSimulacao {
     }
 
     // Registro especial para o relatório horário
-    public static void logRelatorio(String cor, String mensagem) {
+    public static void logRelatorio(String tipoEvento, String mensagem) {
         synchronized (System.out) {
-            String cor_lista = CORES_RELATORIO.get(cor);
-            if (cor_lista == null) {
-                cor_lista = RESET;
+            String cor = CORES_RELATORIO.get(tipoEvento);
+            if (cor == null) {
+                cor = RESET;
             }
-            String mensagemFormatada = String.format("%s %s%s", cor_lista, mensagem, RESET);
+            String mensagemFormatada = String.format("%s %s%s", cor, mensagem, RESET);
             System.out.println(mensagemFormatada);
         }
         if (escritorArquivoLog != null) {
             synchronized (escritorArquivoLog) {
-                escritorArquivoLog.println(mensagem);
+                // Tira todas as cores pro arquivo
+                String mensagemSemCores = mensagem.replaceAll("\u001B\\[[0-9;]*m", "");
+                escritorArquivoLog.println(mensagemSemCores);
                 escritorArquivoLog.flush();
             }
         }
@@ -109,7 +119,7 @@ public class LoggerSimulacao {
             String timestamp = formatarTempo(Simulador.getTempoSimulado());
             String mensagemFormatada = String.format("%s[%s] %s%s", cor, timestamp, mensagem, RESET);
             String mensagemArquivo = String.format("[%s] %s", timestamp, mensagem);
-            if (tipoEvento == "CONFIG" || tipoEvento == "ESTATISTICA"){
+            if (Objects.equals(tipoEvento, "CONFIG") || Objects.equals(tipoEvento, "ESTATISTICA")){
                 mensagemFormatada = String.format("%s %s%s", cor, mensagem, RESET);
                 mensagemArquivo = mensagem;
             }
@@ -134,6 +144,9 @@ public class LoggerSimulacao {
         int dias = minutos / (24 * 60);
         int horas = (minutos % (24 * 60)) / 60;
         int mins = minutos % 60;
+        if(DistribuicaoCaminhoes.isHorarioDePico(minutos)){
+            return String.format("Dia %d, %02d:%02d [PICO]", dias + 1, horas, mins);
+        }
         return String.format("Dia %d, %02d:%02d", dias + 1, horas, mins);
     }
 }

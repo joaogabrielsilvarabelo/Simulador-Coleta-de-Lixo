@@ -64,8 +64,12 @@ public class Fila<T> {
         return atual.dado;
     }
 
-    public boolean estaVazia() { return tamanho == 0; }
-    public int getTamanho() { return tamanho; }
+    public boolean estaVazia() {
+        return tamanho == 0;
+    }
+    public int getTamanho() {
+        return tamanho;
+    }
 }
 
 

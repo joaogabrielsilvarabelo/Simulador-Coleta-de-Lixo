@@ -11,16 +11,18 @@ public class CaminhaoGrande {
     private int capacidade;
     private int cargaAtual;
     private int toleranciaEspera;
+    private int tempoEspera; // Tempo de espera acumulado
     private int status; // 0: ESPERANDO, 1: EM_VIAGEM_PARA_ATERRO, 2: DESCARREGANDO, 3: RETORNANDO
     private int tempoViagemRestante; // Tempo restante para viagem ou descarregamento
     private EstacaoTransferencia estacaoOrigem; // Estação à qual o caminhão está associado
-    private EstacaoTransferencia estacaoDestino;// Estação para onde retorna, se redirecionado
+    private EstacaoTransferencia estacaoDestino; // Estação para onde retorna, se redirecionado
 
     public CaminhaoGrande(int toleranciaEspera) {
         this.placa = Placa.gerarPlaca();
         this.capacidade = 20000;
         this.toleranciaEspera = toleranciaEspera;
         this.cargaAtual = 0;
+        this.tempoEspera = 0;
         this.status = 0; // ESPERANDO
         this.tempoViagemRestante = 0;
         this.estacaoOrigem = null;
@@ -41,35 +43,18 @@ public class CaminhaoGrande {
         }
     }
 
-    // Define a estação de origem
-    public void setEstacaoOrigem(EstacaoTransferencia estacao) {
-        this.estacaoOrigem = estacao;
-    }
-
-    // Define a estação de destino para retorno
-    public void setEstacaoDestino(EstacaoTransferencia estacao) {
-        this.estacaoDestino = estacao;
-    }
-
     // Inicia viagem para o aterro
     public void iniciarViagemParaAterro(int tempoViagem) {
         status = 1; // EM_VIAGEM_PARA_ATERRO
         tempoViagemRestante = tempoViagem;
-        LoggerSimulacao.log("VIAGEM", String.format("Caminhão grande %s iniciando viagem para o aterro (tempo: %dmin)", placa, tempoViagem));
+        LoggerSimulacao.log("VIAGEM", String.format("Caminhão grande %s iniciou viagem para o aterro (tempo: %dmin)", placa, tempoViagem));
     }
 
     // Inicia descarregamento no aterro
     public void iniciarDescarregamento() {
         status = 2; // DESCARREGANDO
         tempoViagemRestante = TEMPO_DESCARREGAMENTO;
-        LoggerSimulacao.log("DESCARGA", String.format("Caminhão grande %s iniciando descarregamento no aterro", placa));
-    }
-
-    // Inicia carregamento da carga do caminhão pequeno
-    public void iniciarCarregamento() {
-        status = 4; // CARREGANDO_LIXO
-        tempoViagemRestante = TEMPO_DESCARREGAMENTO;
-        LoggerSimulacao.log("DESCARGA", String.format("Caminhão grande %s iniciando descarregamento no aterro", placa));
+        LoggerSimulacao.log("DESCARGA", String.format("Caminhão grande %s iniciou descarregamento no aterro", placa));
     }
 
     // Inicia retorno para a estação
@@ -99,16 +84,14 @@ public class CaminhaoGrande {
             } else if (status == 3) { // Chegou à estação
                 status = 0; // ESPERANDO
                 estacaoDestino.atribuirCaminhaoGrande(this);
-                LoggerSimulacao.log("CHEGADA", String.format("Caminhão grande %s chegou à estação %s", placa, estacaoDestino.getNome()));
                 return true; // Pronto para ser reutilizado
-            }
-            else if (status == 4){
-
-                LoggerSimulacao.log("COLETA", String.format("Caminhão grande %s recebeu %s", placa, estacaoDestino.getNome()));
             }
         }
         return false;
     }
+
+    public void incrementarTempoEspera() { tempoEspera++; }
+    public void resetarTempoEspera() { tempoEspera = 0; }
 
     // Getters
     public String getPlaca() { return placa; }
@@ -117,7 +100,12 @@ public class CaminhaoGrande {
     public int getToleranciaEspera() { return toleranciaEspera; }
     public int getEstado() { return status; }
     public EstacaoTransferencia getEstacaoOrigem() { return estacaoOrigem; }
-    public EstacaoTransferencia getEstacaoDestino(){ return estacaoDestino; }
+    public int getTempoEspera() { return tempoEspera; }
+
+    //Setters
+    public void setEstacaoOrigem(EstacaoTransferencia estacao) { this.estacaoOrigem = estacao; }
+    public void setEstacaoDestino(EstacaoTransferencia estacao) { this.estacaoDestino = estacao; }
 }
+
 
 

@@ -53,7 +53,7 @@ public class DistribuicaoCaminhoes {
                             caminhao.getPlaca(), caminhao.getZonaAtual().getNome(), melhorZona.getNome(), tempoViagem));
                 } else {
                     // Permanece na zona atual e coleta
-                    LoggerSimulacao.log("INFO", "Caminhão " + caminhao.getPlaca() + " já está na zona " + zonaAtual.getNome() + ", iniciando coleta");
+                    LoggerSimulacao.log("INFO", "Caminhão " + caminhao.getPlaca() + " já está na zona " + zonaAtual.getNome() + ", iniciando coleta...");
                     caminhao.setEstado(2); // COLETANDO
                 }
             } else if (LoggerSimulacao.ModoLog.DEBUG == LoggerSimulacao.getModoLog()) {
@@ -67,7 +67,7 @@ public class DistribuicaoCaminhoes {
         return distribuidos;
     }
 
-    private static boolean isHorarioDePico(int tempoMinutos) {
+    public static boolean isHorarioDePico(int tempoMinutos) {
         int minutosNoDia = tempoMinutos % TEMPO_MINUTOS_POR_DIA;
         return (minutosNoDia >= PICO_MANHA_INICIO && minutosNoDia <= PICO_MANHA_FIM) ||
                 (minutosNoDia >= PICO_MEIO_DIA_INICIO && minutosNoDia <= PICO_MEIO_DIA_FIM) ||
@@ -100,7 +100,7 @@ public class DistribuicaoCaminhoes {
         // Adiciona variação limitada por zona
         int variacao = isPico ? (origem.getVariacaoPico() + destino.getVariacaoPico()) :
                 (origem.getVariacaoNormal() + destino.getVariacaoNormal());
-        return Math.max(0, tempoBase + Math.min(variacao, 10)); // Limita variação a +10 minutos
+        return Math.max(5, tempoBase + Math.min(variacao, 10)); // Coloca tempo mínimo como 5 minutos e limita variação a +10 minutos
     }
 
     public static int calcularTempoViagem(ZonaUrbana origem, ZonaUrbana destino) {
@@ -169,7 +169,7 @@ public class DistribuicaoCaminhoes {
         if (melhorZona == null) {
             LoggerSimulacao.log("INFO", "Nenhuma zona válida para caminhão " + caminhao.getPlaca());
         } else {
-            LoggerSimulacao.log("INFO", String.format("Melhor zona para caminhão %s: %s (lixo=%dkg)",
+            LoggerSimulacao.log("INFO", String.format("Caminhão %s escolheu a Zona %s (lixo =%dkg)",
                     caminhao.getPlaca(), melhorZona.getNome(), melhorZona.getLixoAcumulado()));
         }
         return melhorZona;
@@ -193,7 +193,7 @@ public class DistribuicaoCaminhoes {
         double proporcaoRestante = (zonaEstatistica != null && zonaEstatistica.getLixoGerado() > 0) ?
                 (double) lixo / zonaEstatistica.getLixoGerado() : 1.0;
         // Fórmula ajustada: prioriza lixo acumulado e proporção, penaliza tempo de viagem
-        double pontuacao = (lixo * 1.0) + (proporcaoRestante * 5000) - (tempoViagem * 50);
+        double pontuacao = (lixo * 1.0) + (proporcaoRestante * 500) - (tempoViagem * 50);
         // Penalidade por excesso de caminhões na zona
         if (caminhoesAtivos > limiteCaminhoesPorZona) {
             double penalidadeCaminhoes = (caminhoesAtivos - limiteCaminhoesPorZona) * 200;

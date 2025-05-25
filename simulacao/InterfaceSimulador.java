@@ -103,25 +103,58 @@ public class InterfaceSimulador {
     }
 
     private void configurarSimulador() {
-        LoggerSimulacao.log("CONFIG", "--- Configuração da Simulação ---");
-        // Prompt for log file name
-        LoggerSimulacao.log("CONFIG", "Nome do arquivo de log (ex: eventos.log): ");
+        LoggerSimulacao.log("CONFIG", "=== Configuração da Simulação ===");
+        // Prompt para o nome do arquivo de log
+        LoggerSimulacao.log("CONFIG", "Nome do arquivo de log de eventos: ");
+        LoggerSimulacao.log("CONFIG", "Nome padrão: eventos.txt (Não digite nada para usá-lo automaticamente) ");
+
         String logFileName = scanner.nextLine().trim();
         if (logFileName.isEmpty()) {
-            logFileName = "eventos.log"; // Default log file name
+            logFileName = "eventos.txt"; // Nome de arquivo log padrão
         }
         LoggerSimulacao.inicializarLogArquivo(logFileName);
+
+        // Seleção de modo de log
+        LoggerSimulacao.ModoLog modoLog = lerModoLog();
+        LoggerSimulacao.setModoLog(modoLog);
+
+        // Configuração de parâmetros dos caminhões
+        LoggerSimulacao.log("CONFIG", "--- Definição de parâmetros da Simulação ---");
+        int tolerancia = lerQuantidade("Quanto tempo é a tolerância de espera dos caminhões grandes (min): ");
+        int tempoMaxEspera = lerQuantidade("Qual é o tempo máximo de espera  dos caminhões pequenos nas estações (min): ");
+        int limiteViagens = lerQuantidade("Quantidade máxima de viagens diárias: ");
+        LoggerSimulacao.log("CONFIG", "Parâmetros definidos: ");
+        LoggerSimulacao.log("CONFIG", String.format("Tolerância de espera dos caminhões grandes:    %d minutos", tolerancia));
+        LoggerSimulacao.log("CONFIG", String.format("Tempo máximo de espera dos caminhões pequenos: %d minutos", tempoMaxEspera));
+        LoggerSimulacao.log("CONFIG", String.format("Quantidade máxima de viagens diárias:          %d viagens", limiteViagens));
+
+        // Configuração de intervalos de lixo por zona
+        configIntervalosZonas();
+
+        //Configuração das localizações das estações e aterro
+        LoggerSimulacao.log("CONFIG", "--- Definição de localizações da Simulação ---");
+        ZonaUrbana zonaEstacaoA = lerZona("Qual é a zona que a estação A estará? (1: Norte; 2: Sul; 3: Leste; 4: Sudeste; 5: Centro): ");
+        ZonaUrbana zonaEstacaoB = lerZona("Qual é a zona que a estação B estará? (1: Norte; 2: Sul; 3: Leste; 4: Sudeste; 5: Centro): ");
+        ZonaUrbana zonaAterro = lerZona("Qual é a zona que o aterro estará? (1: Norte; 2: Sul; 3: Leste; 4: Sudeste; 5: Centro): ");
+        LoggerSimulacao.log("CONFIG", "Localizações inicializadas: ");
+        LoggerSimulacao.log("CONFIG", String.format("Estação A: Zona %s", zonaEstacaoA.getNome()));
+        LoggerSimulacao.log("CONFIG", String.format("Estação B: Zona %s", zonaEstacaoB.getNome()));
+        LoggerSimulacao.log("CONFIG", String.format("Aterro:    Zona %s", zonaAterro.getNome()));
+
+        // Configuração das quantidades de caminhões
+        LoggerSimulacao.log("CONFIG", "--- Definição das quantidades de caminhões pequenos da Simulação ---");
         int qtd2t = lerQuantidade("Quantos caminhões de 2t? ");
         int qtd4t = lerQuantidade("Quantos caminhões de 4t? ");
         int qtd8t = lerQuantidade("Quantos caminhões de 8t? ");
         int qtd10t = lerQuantidade("Quantos caminhões de 10t? ");
-        int tolerancia = lerQuantidade("Tolerância de espera dos caminhões grandes (min): ");
-        int tempoMaxEspera = lerQuantidade("Tempo máximo de espera nas estações (min): ");
-        int limiteViagens = lerQuantidade("Quantidade máxima de viagens diárias: ");
-        LoggerSimulacao.ModoLog modoLog = lerModoLog();
-        LoggerSimulacao.setModoLog(modoLog);
 
-        // Configuração de intervalos de lixo por zona
+        Simulador.inicializarCaminhoes(qtd2t, qtd4t, qtd8t, qtd10t, limiteViagens);
+        Simulador.inicializarEstacoes(tempoMaxEspera, zonaEstacaoA, zonaEstacaoB);
+        Simulador.inicializarAterro(zonaAterro);
+        Simulador.configurarSimuladorParams(tolerancia);
+    }
+
+    private void configIntervalosZonas(){
         int[][] intervalosLixo = new int[5][2];
         String[] zonasNomes = {"Norte", "Sul", "Leste", "Sudeste", "Centro"};
         int opcaoPadrao = lerOpcaoPadrao();
@@ -139,6 +172,7 @@ public class InterfaceSimulador {
             LoggerSimulacao.log("CONFIG", "Intervalos padrão aplicados:");
         } else {
             for (int i = 0; i < 5; i++) {
+                LoggerSimulacao.log("CONFIG", "--- Definição dos intervalos das zonas ---.");
                 LoggerSimulacao.log("CONFIG", String.format("Configurando geração de lixo para zona %s:", zonasNomes[i]));
                 intervalosLixo[i][0] = lerQuantidade("  Intervalo mínimo de lixo diário (kg): ");
                 intervalosLixo[i][1] = lerQuantidade("  Intervalo máximo de lixo diário (kg): ");
@@ -149,17 +183,8 @@ public class InterfaceSimulador {
                 }
             }
         }
-
         Simulador.inicializarZonas(intervalosLixo);
         Simulador.gerarLixoZonas();
-        ZonaUrbana zonaEstacaoA = lerZona("Qual é a zona que a estação A estará? (1: Norte; 2: Sul; 3: Leste; 4: Sudeste; 5: Centro): ");
-        ZonaUrbana zonaEstacaoB = lerZona("Qual é a zona que a estação B estará? (1: Norte; 2: Sul; 3: Leste; 4: Sudeste; 5: Centro): ");
-        ZonaUrbana zonaAterro = lerZona("Qual é a zona que o aterro estará? (1: Norte; 2: Sul; 3: Leste; 4: Sudeste; 5: Centro): ");
-        Simulador.inicializarCaminhoes(qtd2t, qtd4t, qtd8t, qtd10t, limiteViagens);
-        LoggerSimulacao.log("CONFIG", String.format("Inicializados %d caminhões.", Simulador.getCaminhoesPequenos().getTamanho()));
-        Simulador.inicializarEstacoes(tempoMaxEspera, zonaEstacaoA, zonaEstacaoB);
-        Simulador.inicializarAterro(zonaAterro);
-        Simulador.configurarSimuladorParams(tolerancia);
     }
 
     private int lerQuantidade(String mensagem) {

@@ -1,4 +1,5 @@
 import simulacao.InterfaceSimulador;
+import simulacao.LoggerSimulacao;
 import simulacao.Simulador;
 
 public class Main {
@@ -8,10 +9,7 @@ public class Main {
             InterfaceSimulador interfaceCLI = new InterfaceSimulador(simulador);
             interfaceCLI.iniciar();
         } catch (Exception e) {
-            log("Erro ao iniciar o simulador: " + e.getMessage());
+            LoggerSimulacao.log("ERRO","Erro ao iniciar o simulador: " + e.getMessage());
         }
-    }
-    private static void log(String mensagem) {
-        System.out.println(mensagem);
     }
 }
